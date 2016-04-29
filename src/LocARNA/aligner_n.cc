@@ -787,48 +787,100 @@ namespace LocARNA {
 		// 		max_br = arcB->right();
 		// 	}
 	    
-		// ------------------------------------------------------------
-		// from aligner.cc: find maximum arc ends
-		pos_type max_ar=al;
-		pos_type max_br=bl;
 	    
-		// get the maximal right ends of any arc match with left ends (al,bl)
-		// in noLP mode, we don't consider cases without immediately enclosing arc match
-		arc_matches.get_max_right_ends(al,bl,&max_ar,&max_br,params->no_lonely_pairs_);
-	    
-		// check whether there is an arc match at all
-		if (al==max_ar || bl == max_br) continue;
+		if (! params->track_closing_bp_) { // Original SPARSE recursion for max right ends
+			// ------------------------------------------------------------
+			// from aligner.cc: find maximum arc ends
+			pos_type max_ar=al;
+			pos_type max_br=bl;
 
 
-		//compute matrix M
-		//	    stopwatch.start("compM");
-		fill_M_entries(al,max_ar,bl,max_br);
-		//	    stopwatch.stop("compM");
+			// get the maximal right ends of any arc match with left ends (al,bl)
+			// in noLP mode, we don't consider cases without immediately enclosing arc match
+			arc_matches.get_max_right_ends(al,bl,&max_ar,&max_br,params->no_lonely_pairs_);
+
+			// check whether there is an arc match at all
+			if (al==max_ar || bl == max_br) continue;
 
 
-		//compute IA
-		//	    stopwatch.start("compIA");
-		for (BasePairs::LeftAdjList::const_iterator arcB = adjlB.begin();
-		     arcB != adjlB.end(); ++arcB)
-		    {
-			fill_IA_entries(al, *arcB, max_ar );
-		    }
-		//	    stopwatch.stop("compIA");
-
-		//comput IB
-		//	    stopwatch.start("compIB");
-		for (BasePairs::LeftAdjList::const_iterator arcA = adjlA.begin();
-		     arcA != adjlA.end(); ++arcA)
-		    {
-			fill_IB_entries(*arcA, bl, max_br );
-		    }
-		//	    stopwatch.stop("compIB");
+			//compute matrix M
+			//	    stopwatch.start("compM");
+			fill_M_entries(al,max_ar,bl,max_br);
+			//	    stopwatch.stop("compM");
 
 
-		// ------------------------------------------------------------
-		// now fill matrix D entries
-		//
-		fill_D_entries(al,bl);
+			//compute IA
+			//	    stopwatch.start("compIA");
+			for (BasePairs::LeftAdjList::const_iterator arcB = adjlB.begin();
+				 arcB != adjlB.end(); ++arcB)
+				{
+				fill_IA_entries(al, *arcB, max_ar );
+				}
+			//	    stopwatch.stop("compIA");
+
+			//comput IB
+			//	    stopwatch.start("compIB");
+			for (BasePairs::LeftAdjList::const_iterator arcA = adjlA.begin();
+				 arcA != adjlA.end(); ++arcA)
+				{
+				fill_IB_entries(*arcA, bl, max_br );
+				}
+			//	    stopwatch.stop("compIB");
+
+
+			// ------------------------------------------------------------
+			// now fill matrix D entries
+			//
+			fill_D_entries(al,bl);
+		}
+		else
+		{  // Track the exact closing right ends of al and bl
+
+			for (BasePairs::LeftAdjList::const_iterator arcA =
+					adjlA.begin(); arcA != adjlA.end(); ++arcA) {
+				for (BasePairs::LeftAdjList::const_iterator arcB =
+						adjlB.begin(); arcB != adjlB.end(); ++arcB) {
+					//compute matrix M
+					//	    stopwatch.start("compM");
+					fill_M_entries(al, arcA->right(), bl, arcB->right());
+					//	    stopwatch.stop("compM");
+
+				}
+			}
+
+			//TODO: Make the IA and IB calculations with exact right side(?)
+			// from aligner.cc: find maximum arc ends
+			pos_type max_ar = al;
+			pos_type max_br = bl;
+
+			// get the maximal right ends of any arc match with left ends (al,bl)
+			// in noLP mode, we don't consider cases without immediately enclosing arc match
+			arc_matches.get_max_right_ends(al, bl, &max_ar, &max_br,
+					params->no_lonely_pairs_);
+
+
+			//compute IA
+			//	    stopwatch.start("compIA");
+			for (BasePairs::LeftAdjList::const_iterator arcB =
+					adjlB.begin(); arcB != adjlB.end(); ++arcB) {
+				fill_IA_entries(al, *arcB, max_ar);
+			}
+			//	    stopwatch.stop("compIA");
+
+			//comput IB
+			//	    stopwatch.start("compIB");
+			for (BasePairs::LeftAdjList::const_iterator arcA =
+					adjlA.begin(); arcA != adjlA.end(); ++arcA) {
+				fill_IB_entries(*arcA, bl, max_br);
+			}
+			//	    stopwatch.stop("compIB");
+
+			// ------------------------------------------------------------
+			// now fill matrix D entries
+			//
+			fill_D_entries(al, bl);
+
+		}
 	    }
 	}
 	if (trace_debugging_output) std::cout << "M matrix:" << std::endl << M << std::endl;
