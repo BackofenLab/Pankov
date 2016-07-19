@@ -167,6 +167,8 @@ struct command_line_parameters {
     bool opt_stacking; //!< whether to use stacking scores
     bool opt_new_stacking; //!< whether to use new stacking scores
 
+    bool opt_track_closing_bp; //!< whether to track right end of a closing basepair
+
     std::string ribosum_file; //!< ribosum_file
     bool use_ribosum; //!< use_ribosum
 
@@ -245,6 +247,9 @@ option_def my_options[] = {
     {"struct-weight",'s',0,O_ARG_INT,&clp.struct_weight,"200","score","Maximal weight of 1/2 arc match"},
     {"exp-prob",'e',&clp.opt_exp_prob,O_ARG_DOUBLE,&clp.exp_prob,O_NODEFAULT,"prob","Expected probability"},
     {"tau",'t',0,O_ARG_INT,&clp.tau_factor,"100","factor","Tau factor in percent"},
+
+    {"track-closing-bp",0,&clp.opt_track_closing_bp,O_NO_ARG,0,O_NODEFAULT,"","Track right end of a closing basepair "},
+
     //    {"exclusion",'E',0,O_ARG_INT,&clp.exclusion_score,"0","score","Exclusion weight"},
     //    {"stacking",0,&clp.opt_stacking,O_NO_ARG,0,O_NODEFAULT,"","Use stacking terms (needs stack-probs by RNAfold -p2)"},
     //    {"new-stacking",0,&clp.opt_newstacking,O_NO_ARG,0,O_NODEFAULT,"","Use new stacking terms (needs stack-probs by RNAfold -p2)"},
@@ -842,6 +847,7 @@ main(int argc, char **argv) {
 	. min_am_prob(clp.min_am_prob)
 	. min_bm_prob(clp.min_bm_prob)
 	. stacking(clp.opt_stacking || clp.opt_new_stacking)
+	. track_closing_bp(clp.opt_track_closing_bp)
 	. constraints(seq_constraints);
 
 

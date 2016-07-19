@@ -133,6 +133,8 @@ namespace LocARNA {
     
 	bool stacking_; //!< whether to use stacking
 
+	bool track_closing_bp_; //!< whether to track the exact right end of a closing basepair for SPARSE
+
 	const AnchorConstraints *constraints_; //!< anchor constraints
 
 
@@ -247,6 +249,14 @@ namespace LocARNA {
 	stacking(bool stacking) {stacking_=stacking; return *this;}
 	
 	/**
+	 * @brief set parameter track_closing_bp
+	 * @param track_closing_bp whether to track_closing_bp
+	 */
+	AlignerParams &
+	track_closing_bp(bool track_closing_bp) {track_closing_bp_=track_closing_bp; return *this;}
+
+
+	/**
 	 * @brief set parameter constraints
 	 * @param constraints  anchor constraints
 	 */
@@ -275,6 +285,7 @@ namespace LocARNA {
 	    min_am_prob_(0), 
 	    min_bm_prob_(0),	   
 	    stacking_(false),
+	    track_closing_bp_(false),
 	    constraints_(0L)
 	{}
 
