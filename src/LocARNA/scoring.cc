@@ -92,6 +92,73 @@ namespace LocARNA {
 
     }
 
+    Scoring::Scoring(const Sequence &seqA_,
+		     const Sequence &seqB_,
+		     const ExtRnaData &rna_dataA_,
+		     const ExtRnaData &rna_dataB_,
+		     const ArcMatches &arc_matches_,
+		     const MatchProbs *match_probs_,
+		     const ScoringParams &params_,
+		     bool exp_scores,
+		     bool conditional_scores_
+
+		     ):
+	params(&params_),
+	arc_matches(&arc_matches_),
+	match_probs(match_probs_),
+	rna_dataA(rna_dataA_),
+	rna_dataB(rna_dataB_),
+	ext_rna_dataA(rna_dataA_), // TODO: Is this down casting safe?
+	ext_rna_dataB(rna_dataB_), // TODO: Is this down casting safe?
+	seqA(seqA_),
+	seqB(seqB_),
+	lambda_(0),
+	conditonal_scores(conditional_scores_),
+	closingA(0, 0, seqA_.length()),//TODO: What to set as index?
+	closingB(0, 0, seqB_.length()) //TODO: What to set as index?
+    {
+    std::cout << "Scoring(ExtRnaDat..)" << std::endl;
+#ifndef NDEBUG
+	if (params->ribofit || params->ribosum) {
+	    // check sequences
+	    if (!seqA.checkAlphabet(Alphabet<char>((char*)"ACGUN-",6))
+		||
+		!seqB.checkAlphabet(Alphabet<char>((char*)"ACGUN-",6))
+		) {
+		std::cerr << "WARNING: unsupported sequence characters found." <<std::endl;
+	    }
+	}
+#endif
+
+	if (params->ribofit) {
+	    precompute_sequence_identities();
+	}
+
+
+	precompute_sigma();
+	precompute_gapcost();
+	precompute_weights();
+
+	apply_unpaired_penalty();
+	if (exp_scores) {
+	    exp_indel_opening_score =
+		boltzmann_weight(params->indel_opening);
+	    exp_indel_opening_loop_score =
+		boltzmann_weight(params->indel_opening_loop);
+	    precompute_exp_sigma();
+	    precompute_exp_gapcost();
+	}
+	// -----------------------------------------
+	// Set default context for the parent arcs needed if conditonal_scores is set to True
+	// TODO: How about considering the alignment constraints?
+//		parent_arcA = Arc();
+//		parent_arcB = Arc();
+	context_al = 0;
+	context_ar = seqA_.length();
+	context_bl = 0;
+	context_br = seqB_.length();
+
+    }
 
 
 
@@ -121,10 +188,11 @@ namespace LocARNA {
 
     }
 
-//	void Scoring::set_closing_arcs(const Arc &closingA_, const Arc &closingB_) const{
-//		closingA = Arc(closingA_.idx(), closingA_.left(), closingA_.right());
-//		closingB = closingB_;
-//	}
+	void Scoring::set_closing_arcs(const Arc &closingA_, const Arc &closingB_) {
+		std::cout << "set_closing_arcs : " << closingA_.left() << "," << closingA_.right() << "   " <<closingB_.left() << "," << closingB_.right();
+		closingA = Arc(closingA_.idx(), closingA_.left(), closingA_.right());
+		closingB = Arc(closingB_.idx(), closingB_.left(), closingB_.right());
+	}
 
 
     void
@@ -291,6 +359,7 @@ namespace LocARNA {
 	    const Arc &a=bps.arc(i);
 
 	    double p = rna_data.arc_prob(a.left(),a.right());
+	    std::cout << "   " << a.left() << "," << a.right() << "=" << p << std::endl;
 	    weights[i] = probToWeight(p,exp_prob);
 	    
 	    if (params->stacking) {
@@ -317,8 +386,9 @@ namespace LocARNA {
     Scoring::precompute_weights() {
 	//score_t weight = 
 	//score_t cond_weight = probToWeight(cond_prob);
-	
+	std::cout << "precompute_weights() A" << std::endl;
 	precompute_weights(rna_dataA,arc_matches->get_base_pairsA(),params->exp_probA,weightsA,stack_weightsA);
+	std::cout << "precompute_weights() B" << std::endl;
 	precompute_weights(rna_dataB,arc_matches->get_base_pairsB(),params->exp_probB,weightsB,stack_weightsB);
     }
 
@@ -555,6 +625,7 @@ namespace LocARNA {
 	       (rna_dataA.joint_arc_prob(arcA.left(),arcA.right())>0 
 		&& rna_dataB.joint_arc_prob(arcB.left(),arcB.right())>0));
 
+
 	score_t sequence_contribution=0;
 
 
@@ -580,21 +651,50 @@ namespace LocARNA {
 	assert (! (params->mea_scoring && conditonal_scores));
 	assert (! (stacked && conditonal_scores));
 
-	if ( conditonal_scores ) { // Use conditional scores
+	if ( conditonal_scores ) { // Use conditional-prob scores
 //		std::cout << ext_rna_dataA.arc_in_loop_cutoff_prob() << std::endl;
+		std::cout << "params->tau_factor: " << params->tau_factor << std::endl;
 		assert (sequence_contribution == 0); //TODO: Temporary accept  tau to be only zero
 
-		 score_t joint_probA = ext_rna_dataA.arc_in_loop_prob(arcA.left(), arcA.right(),
-				 closingA.left(),closingA.right());
-		 score_t joint_probB = ext_rna_dataB.arc_in_loop_prob(arcB.left(), arcB.right(),
-		 				 closingB.left(),closingB.right());
-		 score_t prob_closingA = rna_dataA.arc_prob(closingA.left(), closingA.right());
-		 score_t prob_closingB = rna_dataB.arc_prob(closingB.left(), closingB.right());
-		 std::cout << closingA.left() << "," << closingA.right() << std::endl;
-		 std::cout << arcA.left() << "," << arcA.right() << " : " << joint_probA << "  " << prob_closingA << std::endl;
-		 std::cout << joint_probB << "  " << prob_closingB << std::endl;
+		double probA = rna_dataA.arc_prob(arcA.left(), arcA.right());
+		double probB = rna_dataB.arc_prob(arcB.left(), arcB.right());
+		std::cout <<  "** arcA: " << arcA.left() << "," << arcA.right() << "=" << probA <<  std::endl;
+		std::cout <<  "** arcB: " << arcB.left() << "," << arcB.right() << "=" << probB <<  std::endl;
 
-		 return log (joint_probA/prob_closingA) + log (joint_probB/prob_closingB);
+		double joint_probA = ext_rna_dataA.arc_in_loop_prob(arcA.left(), arcA.right(),
+				 closingA.left(),closingA.right());
+		double joint_probB = ext_rna_dataB.arc_in_loop_prob(arcB.left(), arcB.right(),
+		 				 closingB.left(),closingB.right());
+		double prob_closingA = rna_dataA.arc_prob(closingA.left(), closingA.right());
+		double prob_closingB = rna_dataB.arc_prob(closingB.left(), closingB.right());
+
+		 std::cout << " closingA:" << closingA.left() << "," << closingA.right() << "=" << prob_closingA << std::endl;
+		 std::cout << " closingB:" << closingB.left() << "," << closingB.right() << "=" << prob_closingB << std::endl;
+//
+		 std::cout << "     jointA: " <<  joint_probA << " | jointB: " << joint_probB << std::endl;
+		 assert (prob_closingA != 0);
+		 assert (prob_closingB != 0);
+		 score_t ret_score = 0;
+		 score_t cond_zero_penalty = -10;
+		 if ( prob_closingA != 0 )
+		 {
+			 std::cout << "=======A " << log (joint_probA/prob_closingA);
+			 ret_score += log (joint_probA/prob_closingA);
+		 }
+		 else
+		 	 ret_score += cond_zero_penalty;
+
+		 if ( prob_closingB != 0 )
+		 {
+			 std::cout << "=======B " << log (joint_probB/prob_closingB);
+			 ret_score += log (joint_probB/prob_closingB);
+		 }
+		 else
+			 ret_score += cond_zero_penalty;
+		 std::cout << "ret_score: " << ret_score << std::endl;
+		 return ret_score;
+
+//		 return  + log (joint_probB/prob_closingB);
 
 
 

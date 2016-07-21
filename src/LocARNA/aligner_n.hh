@@ -51,7 +51,8 @@ namespace LocARNA {
     protected:
 	const AlignerNParams *params; //!< the parameter for the alignment
 
-	const Scoring *scoring; //!< the scores
+	// TODO: const Scoring?
+	Scoring *scoring; //!< the scores
 	Scoring *mod_scoring; //!< used in normalized scoring, when we need to modify the scoring
 	const Sequence &seqA; //!< sequence A
 	const Sequence &seqB; //!< sequence B
@@ -141,7 +142,8 @@ namespace LocARNA {
 	     *
 	     * @return (unmodified) scoring object of aligner
 	     */
-	    const Scoring *scoring() const {return alignerN_->scoring;}
+	    // TODO: const
+            Scoring *scoring() const {return alignerN_->scoring;}
 
 	    /**
 	     * View on matrix D
@@ -267,8 +269,12 @@ namespace LocARNA {
 	};
 
 
-	const UnmodifiedScoringViewN def_scoring_view; //!< Default scoring view
+	// TODO: const
+	UnmodifiedScoringViewN def_scoring_view; //!< Default scoring view
 	ModifiedScoringViewN mod_scoring_view; //!< Modified scoring view for normalized alignment
+
+	Arc traceback_closing_arcA;
+	Arc traceback_closing_arcB;
 
 	// ============================================================
 

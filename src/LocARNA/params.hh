@@ -109,7 +109,8 @@ namespace LocARNA {
 	
 	const ArcMatches *arc_matches_; //!< arc matches
 
-	const Scoring *scoring_; //!< scoring object
+	// TODO: const?
+	Scoring *scoring_; //!< scoring object
 
 	bool no_lonely_pairs_; //!< no lonely pairs option
   
@@ -166,7 +167,9 @@ namespace LocARNA {
 	 * @param scoring scoring object
 	 */
 	AlignerParams &
-	scoring(const Scoring &scoring) {scoring_=&scoring; return *this;}
+	scoring(
+			//TODO: const ?
+	Scoring &scoring) {scoring_=&scoring; return *this;}
 
 	/**
 	 * @brief set parameter no_lonely_pairs

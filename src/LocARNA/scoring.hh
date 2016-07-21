@@ -347,6 +347,31 @@ namespace LocARNA {
 		bool conditional_scores=false
 		);
 
+    /**
+	 * @brief construct scoring object
+	 *
+	 * @param seqA first sequence
+	 * @param seqB second sequence
+	 * @param rna_dataA Extended probability data of first sequence
+	 * @param rna_dataB Extended  probability data of second sequence
+	 * @param arc_matches the (significant) arc matches between the sequences
+	 * @param match_probs pointer to base match probabilities (can be 0L for non-mea scores)
+	 * @param params a collection of parameters for scoring
+	 * @param exp_scores only if true, the results of the exp_*
+	 * scoring functions are defined, otherwise precomputations can be omitted.
+	 * @param conditional_scores only if true the conditional probability scoring is used
+	*/
+	Scoring(const Sequence &seqA,
+		const Sequence &seqB,
+		const ExtRnaData &rna_dataA,
+		const ExtRnaData &rna_dataB,
+		const ArcMatches &arc_matches,
+		const MatchProbs *match_probs,
+		const ScoringParams &params,
+		bool exp_scores=false,
+		bool conditional_scores=false
+		);
+
 
 	/**
 	 * modify scoring by a parameter lambda. Used in the
@@ -376,7 +401,7 @@ namespace LocARNA {
 	 * @param closingA The arc closing the first sequence
 	 * @param closingB The arc closing the scond sequence
 	 */
-	void set_closing_arcs(const Arc &closingA, const Arc &closingB) const;
+	void set_closing_arcs(const Arc &closingA, const Arc &closingB);
 
 
 	/** 
