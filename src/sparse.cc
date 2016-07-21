@@ -168,6 +168,7 @@ struct command_line_parameters {
     bool opt_new_stacking; //!< whether to use new stacking scores
 
     bool opt_track_closing_bp; //!< whether to track right end of a closing basepair
+    bool opt_use_conditional_scoring; //!< whether to use the conditional probability scoring
 
     std::string ribosum_file; //!< ribosum_file
     bool use_ribosum; //!< use_ribosum
@@ -249,6 +250,8 @@ option_def my_options[] = {
     {"tau",'t',0,O_ARG_INT,&clp.tau_factor,"100","factor","Tau factor in percent"},
 
     {"track-closing-bp",0,&clp.opt_track_closing_bp,O_NO_ARG,0,O_NODEFAULT,"","Track right end of a closing basepair "},
+    {"use-conditional-scoring",0,&clp.opt_use_conditional_scoring,O_NO_ARG,0,O_NODEFAULT,"","Use conditional probability scoring "},
+
 
     //    {"exclusion",'E',0,O_ARG_INT,&clp.exclusion_score,"0","score","Exclusion weight"},
     //    {"stacking",0,&clp.opt_stacking,O_NO_ARG,0,O_NODEFAULT,"","Use stacking terms (needs stack-probs by RNAfold -p2)"},
@@ -457,6 +460,11 @@ main(int argc, char **argv) {
 	return -1;
     }
 
+    //
+	if (clp.opt_use_conditional_scoring && !clp.opt_track_closing_bp ) {
+	std::cerr << "Error: conditonal scoring only works if track_closing_bp is enabled" << std::endl;
+	}
+
     // ----------------------------------------
     // temporarily turn off stacking unless background prob is set
     //
@@ -466,6 +474,7 @@ main(int argc, char **argv) {
 		  << "explicitely (option --exp-prob)." << std::endl;
 	clp.opt_stacking=false;
     }
+
 
 
     // ----------------------------------------  
@@ -812,7 +821,8 @@ main(int argc, char **argv) {
 		    *arc_matches,
 		    match_probs,
 		    scoring_params,
-		    false // no Boltzmann weights
+		    false, // no Boltzmann weights
+		    clp.opt_use_conditional_scoring
 		    );    
 
     if (clp.opt_write_arcmatch_scores) {

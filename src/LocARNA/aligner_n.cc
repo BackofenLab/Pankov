@@ -787,7 +787,6 @@ namespace LocARNA {
 		// 		max_br = arcB->right();
 		// 	}
 	    
-	    
 		if (! params->track_closing_bp_) { // Original SPARSE recursion for max right ends
 			// ------------------------------------------------------------
 			// from aligner.cc: find maximum arc ends
@@ -836,10 +835,12 @@ namespace LocARNA {
 		else
 		{  // Track the exact closing right ends of al and bl
 
+
 			for (BasePairs::LeftAdjList::const_iterator arcA =
 					adjlA.begin(); arcA != adjlA.end(); ++arcA) {
 				for (BasePairs::LeftAdjList::const_iterator arcB =
 						adjlB.begin(); arcB != adjlB.end(); ++arcB) {
+//					scoring->set_closing_arcs(*arcA, *arcB);
 					//compute matrix M
 					//	    stopwatch.start("compM");
 					fill_M_entries(al, arcA->right(), bl, arcB->right());

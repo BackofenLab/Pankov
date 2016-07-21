@@ -12,7 +12,7 @@
 
 #include "scoring_fwd.hh"
 #include "matrix.hh"
-
+#include "basepairs.hh"
 #ifndef NDEBUG
 #include "sequence.hh"
 #endif
@@ -33,6 +33,7 @@ namespace LocARNA {
     class ArcMatch;
     class MatchProbs;
     class RnaData;
+    class ExtRnaData;
     
     //! matrix of scores supporting infinity
     typedef std::vector<infty_score_t> ScoreVector;
@@ -296,6 +297,10 @@ namespace LocARNA {
 
 	const RnaData &rna_dataA; //!< rna data for RNA A
 	const RnaData &rna_dataB; //!< rna data for RNA B
+
+	const ExtRnaData &ext_rna_dataA; //!< Ext rna data for RNA A
+	const ExtRnaData &ext_rna_dataB; //!< Ext rna data for RNA B
+
 	const Sequence &seqA; //!< sequence A
 	const Sequence &seqB; //!< sequence B
      
@@ -304,10 +309,20 @@ namespace LocARNA {
 	 * alignment
 	 */
     	score_t lambda_;
-	
+
+    bool conditonal_scores; //!< Use conditional probs/scores if true
+    Arc closingA;
+    Arc closingB;
+    size_type context_al;
+    size_type context_ar;
+    size_type context_bl;
+    size_type context_br;
+
+
+
     public:
 	
-	/**
+    /**
 	 * @brief construct scoring object
 	 *
 	 * @param seqA first sequence
@@ -318,9 +333,9 @@ namespace LocARNA {
 	 * @param match_probs pointer to base match probabilities (can be 0L for non-mea scores)
 	 * @param params a collection of parameters for scoring
 	 * @param exp_scores only if true, the results of the exp_*
-	 * scoring functions are defined, otherwise precomputations
-	 * can be ommitted.
-	 */
+	 * scoring functions are defined, otherwise precomputations can be omitted.
+	 * @param conditional_scores only if true the conditional probability scoring is used
+	*/
 	Scoring(const Sequence &seqA,
 		const Sequence &seqB,
 		const RnaData &rna_dataA,
@@ -328,10 +343,11 @@ namespace LocARNA {
 		const ArcMatches &arc_matches,
 		const MatchProbs *match_probs,
 		const ScoringParams &params,
-		bool exp_scores=false
+		bool exp_scores=false,
+		bool conditional_scores=false
 		);
 
-    
+
 	/**
 	 * modify scoring by a parameter lambda. Used in the
 	 * computational of normalized local alignment by fractional
@@ -352,6 +368,16 @@ namespace LocARNA {
 	 */
 	void
 	apply_unpaired_penalty();
+
+	/**
+	 * Set the closing arcs/basepairs of the current investigated loops
+	 * If conditional_scores is set, this closing arcs are used to calculate the conditional prob/score
+	 * of having arcs under/closed-by these closing basepairs
+	 * @param closingA The arc closing the first sequence
+	 * @param closingB The arc closing the scond sequence
+	 */
+	void set_closing_arcs(const Arc &closingA, const Arc &closingB) const;
+
 
 	/** 
 	 * @brief Get factor lambda for normalized alignment
@@ -466,7 +492,7 @@ namespace LocARNA {
 	 * @param p probability
 	 * @param exp_prob background probability
 	 *
-	 * @return In standard case, normlized log of probability; in case
+	 * @return In standard case, normalized log of probability; in case
 	 * of mea, score_res*probability.
 	 */
 	score_t

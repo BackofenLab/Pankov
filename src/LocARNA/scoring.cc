@@ -2,6 +2,7 @@
 #include "sequence.hh"
 #include "scoring.hh"
 #include "rna_data.hh"
+#include "ext_rna_data.hh"
 #include "arc_matches.hh"
 #include "match_probs.hh"
 #include "ribosum.hh"
@@ -30,16 +31,23 @@ namespace LocARNA {
 		     const ArcMatches &arc_matches_,
 		     const MatchProbs *match_probs_,
 		     const ScoringParams &params_,
-		     bool exp_scores
+		     bool exp_scores,
+		     bool conditional_scores_
+
 		     ):
 	params(&params_),
 	arc_matches(&arc_matches_),
 	match_probs(match_probs_),
 	rna_dataA(rna_dataA_),
 	rna_dataB(rna_dataB_),
+	ext_rna_dataA((ExtRnaData&)rna_dataA_), // TODO: Is this down casting safe?
+	ext_rna_dataB((ExtRnaData&)rna_dataB_), // TODO: Is this down casting safe?
 	seqA(seqA_),
 	seqB(seqB_),
-	lambda_(0)
+	lambda_(0),
+	conditonal_scores(conditional_scores_),
+	closingA(0, 0, seqA_.length()),//TODO: What to set as index?
+	closingB(0, 0, seqB_.length()) //TODO: What to set as index?
     {
 
 #ifndef NDEBUG
@@ -72,7 +80,18 @@ namespace LocARNA {
 	    precompute_exp_sigma();
 	    precompute_exp_gapcost();
 	}
+	// -----------------------------------------
+	// Set default context for the parent arcs needed if conditonal_scores is set to True
+	// TODO: How about considering the alignment constraints?
+//		parent_arcA = Arc();
+//		parent_arcB = Arc();
+	context_al = 0;
+	context_ar = seqA_.length();
+	context_bl = 0;
+	context_br = seqB_.length();
+
     }
+
 
 
 
@@ -101,6 +120,11 @@ namespace LocARNA {
 	subtract(gapcost_tabB, params->unpaired_penalty);
 
     }
+
+//	void Scoring::set_closing_arcs(const Arc &closingA_, const Arc &closingB_) const{
+//		closingA = Arc(closingA_.idx(), closingA_.left(), closingA_.right());
+//		closingB = closingB_;
+//	}
 
 
     void
@@ -553,7 +577,33 @@ namespace LocARNA {
 	    }
 	}
 
-	if (! params->mea_scoring) {
+	assert (! (params->mea_scoring && conditonal_scores));
+	assert (! (stacked && conditonal_scores));
+
+	if ( conditonal_scores ) { // Use conditional scores
+//		std::cout << ext_rna_dataA.arc_in_loop_cutoff_prob() << std::endl;
+		assert (sequence_contribution == 0); //TODO: Temporary accept  tau to be only zero
+
+		 score_t joint_probA = ext_rna_dataA.arc_in_loop_prob(arcA.left(), arcA.right(),
+				 closingA.left(),closingA.right());
+		 score_t joint_probB = ext_rna_dataB.arc_in_loop_prob(arcB.left(), arcB.right(),
+		 				 closingB.left(),closingB.right());
+		 score_t prob_closingA = rna_dataA.arc_prob(closingA.left(), closingA.right());
+		 score_t prob_closingB = rna_dataB.arc_prob(closingB.left(), closingB.right());
+		 std::cout << closingA.left() << "," << closingA.right() << std::endl;
+		 std::cout << arcA.left() << "," << arcA.right() << " : " << joint_probA << "  " << prob_closingA << std::endl;
+		 std::cout << joint_probB << "  " << prob_closingB << std::endl;
+
+		 return log (joint_probA/prob_closingA) + log (joint_probB/prob_closingB);
+
+
+
+		// base pair weights
+//		(weightsA[arcA.idx()] + weightsB[arcB.idx()])
+//		-4*lambda_  //TODO: What to do with lambda?
+		;
+	}
+	else if (! params->mea_scoring) { // Usual case
 	    return
 		// base match contribution
 		// (also for arc-match add terms for the base match on both ends, weighted by tau_factor)
