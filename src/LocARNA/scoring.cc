@@ -189,7 +189,7 @@ namespace LocARNA {
     }
 
 	void Scoring::set_closing_arcs(const Arc &closingA_, const Arc &closingB_) {
-		std::cout << "set_closing_arcs : " << closingA_.left() << "," << closingA_.right() << "   " <<closingB_.left() << "," << closingB_.right();
+		std::cout << "set_closing_arcs : " << closingA_.left() << "," << closingA_.right() << "   " <<closingB_.left() << "," << closingB_.right() << std::endl;
 		closingA = Arc(closingA_.idx(), closingA_.left(), closingA_.right());
 		closingB = Arc(closingB_.idx(), closingB_.left(), closingB_.right());
 	}
@@ -672,27 +672,35 @@ namespace LocARNA {
 		 std::cout << " closingB:" << closingB.left() << "," << closingB.right() << "=" << prob_closingB << std::endl;
 //
 		 std::cout << "     jointA: " <<  joint_probA << " | jointB: " << joint_probB << std::endl;
-		 assert (prob_closingA != 0);
-		 assert (prob_closingB != 0);
+
+
+
+		 assert (probA != 0);
+		 assert (probB != 0);
 		 score_t ret_score = 0;
-		 score_t cond_zero_penalty = -10;
-		 if ( prob_closingA != 0 )
-		 {
-			 std::cout << "=======A " << log (joint_probA/prob_closingA);
-			 ret_score += log (joint_probA/prob_closingA);
+		 score_t cond_zero_penalty = 10;
+
+		 if (closingA.left() == 0 && closingA.right() == seqA.length()) { //TODO: And or OR?
+			 ret_score += params->struct_weight/10.0 * log (probA);
+		 }
+		 else if ( prob_closingA != 0 && joint_probA != 0) {
+			 std::cout << "=======A " << params->struct_weight/10.0 * log (joint_probA/prob_closingA);
+			 ret_score += params->struct_weight/10.0 * log (joint_probA/prob_closingA);
 		 }
 		 else
 		 	 ret_score += cond_zero_penalty;
 
-		 if ( prob_closingB != 0 )
-		 {
-			 std::cout << "=======B " << log (joint_probB/prob_closingB);
-			 ret_score += log (joint_probB/prob_closingB);
+		 if (closingB.left() == 0 && closingB.right() == seqB.length()) { //TODO: And or OR?
+				 ret_score += params->struct_weight/10.0 * log (probB);
+		 }
+		 else if ( prob_closingB != 0 && joint_probB != 0) {
+			 std::cout << "=======B " << params->struct_weight/10.0 * log (joint_probB/prob_closingB);
+			 ret_score += params->struct_weight/10.0 * log (joint_probB/prob_closingB);
 		 }
 		 else
 			 ret_score += cond_zero_penalty;
-		 std::cout << "ret_score: " << ret_score << std::endl;
-		 return ret_score;
+		 std::cout << "-ret_score: " << -ret_score << std::endl;
+		 return -ret_score;
 
 //		 return  + log (joint_probB/prob_closingB);
 
@@ -704,7 +712,8 @@ namespace LocARNA {
 		;
 	}
 	else if (! params->mea_scoring) { // Usual case
-	    return
+	    std::cout << "weights " << weightsA[arcA.idx()] << "+" << weightsB[arcB.idx()] << std::endl;
+		return
 		// base match contribution
 		// (also for arc-match add terms for the base match on both ends, weighted by tau_factor)
 		( (params->tau_factor * sequence_contribution) / 100 )
