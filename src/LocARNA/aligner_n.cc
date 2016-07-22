@@ -17,7 +17,7 @@
 
 namespace LocARNA {
 
-    bool trace_debugging_output=false; //!< a static switch to enable generating debugging logs
+    bool trace_debugging_output=true; //!< a static switch to enable generating debugging logs
 
 
     // ------------------------------------------------------------
@@ -286,11 +286,11 @@ namespace LocARNA {
 	seq_pos_t j_prev_seq_pos = mapperB.get_pos_in_seq_new(bl, j_index-1); 
 	//TODO: Check border j_index==1,0
 
-	// if (trace_debugging_output) {
-	//     std::cout << "compute_M_entry al: " << al << " bl: " << bl 
-	// 	      << "i:" << i_seq_pos << "/i_index: " << i_index 
-	// 	      << " j: " << j_seq_pos << "/j_index:"<< j_index << std::endl;
-	// }
+	 if (trace_debugging_output) {
+	     std::cout << "compute_M_entry al: " << al << " bl: " << bl
+	 	      << "i:" << i_seq_pos << "/i_index: " << i_index
+	 	      << " j: " << j_seq_pos << "/j_index:"<< j_index << std::endl;
+	 }
 
 	score_t opening_cost_A=0;
 	if (i_prev_seq_pos < (i_seq_pos - 1)) {
@@ -517,7 +517,14 @@ namespace LocARNA {
 	    std::cout << "fill_IA_entries: " <<  "al=" << al << "max_ar=" << max_ar << ", arcB=" << arcB << std::endl;
 
 	IAmat(0, arcB.idx()) = infty_score_t::neg_infty;
-	for (matidx_t i_index = 1; i_index < mapperA.number_of_valid_mat_pos(al); i_index++) {
+	pos_type max_right_index;
+	if (params->track_closing_bp_) { // Track the exact closing right ends of al and bl
+		max_right_index = mapperA.first_valid_mat_pos_before(al, max_ar) + 1;
+	}else {
+		max_right_index = mapperA.number_of_valid_mat_pos(al);
+	}
+
+	for (matidx_t i_index = 1; i_index < max_right_index; i_index++) {
 
 	    IAmat(i_index, arcB.idx()) = compute_IX(al, arcB, i_index, true, def_scoring_view);
 
@@ -540,7 +547,14 @@ namespace LocARNA {
 	    std::cout << "fill_IB_entries: " << "arcA=" << arcA<< ", bl=" << bl << "max_br=" << max_br << std::endl;
 	IBmat(arcA.idx(), 0) = infty_score_t::neg_infty;
 
-	for (pos_type j_index = 1; j_index < mapperB.number_of_valid_mat_pos(bl); j_index++) {		// limit entries due to trace control
+	pos_type max_right_index;
+	if (params->track_closing_bp_) { // Track the exact closing right ends of al and bl
+		max_right_index = mapperB.first_valid_mat_pos_before(bl, max_br) + 1;
+	}else {
+		max_right_index = mapperB.number_of_valid_mat_pos(bl);
+	}
+
+	for (pos_type j_index = 1; j_index < max_right_index; j_index++) {		// limit entries due to trace control
 
 
 	    IBmat(arcA.idx(), j_index) = compute_IX(bl, arcA, j_index, false, def_scoring_view);
@@ -569,7 +583,9 @@ namespace LocARNA {
 			     pos_type bl, pos_type br) {
 	
 	assert(br>0); //todo: adding appropriate assertions
-
+	if (trace_debugging_output) {
+		std::cout << "fill_M_entries: " << al << "," << ar << "  " << bl << "," << br << std::endl;
+	}
 	//initialize M
 	init_M_E_F(al, ar, bl, br, def_scoring_view);
 
@@ -577,31 +593,62 @@ namespace LocARNA {
 	    std::cout << "init_M finished" << std::endl;
 	}
 
-	//iterate through valid entries
-	for (matidx_t i_index = 1;
-	     i_index < mapperA.number_of_valid_mat_pos(al);
-	     i_index++) {
-	    /*
-	    //tomark: constraints
-	    // limit entries due to trace controller
-	    pos_type min_col = std::max(bl+1,params->trace_controller.min_col(i));
-	    pos_type max_col = std::min(br-1,params->trace_controller.max_col(i));
-	    */
-	    for (matidx_t j_index = 1;
-		 j_index < mapperB.number_of_valid_mat_pos(bl);
-		 j_index++) {
-		
-		// E and F matrix entries will be computed by compute_M_entry
-		M(i_index,j_index) = compute_M_entry(al,bl,i_index,j_index,def_scoring_view);
-		//toask: where should we care about non_default scoring views
-		
-		// if (trace_debugging_output) {
-		//     std::cout << "M["<< i_index << "," << j_index << "]=" 
-		// 	      << M(i_index,j_index) << std::endl;
-		// }
-	    }
-	}
 
+	if (params->track_closing_bp_) { // Track the exact closing right ends of al and bl
+		//iterate through valid entries
+
+		for (matidx_t i_index = 1;
+			 i_index <= mapperA.first_valid_mat_pos_before_eq(al, ar);
+			 i_index++) {
+			/*
+			//tomark: constraints
+			// limit entries due to trace controller
+			pos_type min_col = std::max(bl+1,params->trace_controller.min_col(i));
+			pos_type max_col = std::min(br-1,params->trace_controller.max_col(i));
+			*/
+			for (matidx_t j_index = 1;
+			 j_index <= mapperB.first_valid_mat_pos_before_eq(bl, br);
+			 j_index++) {
+
+			// E and F matrix entries will be computed by compute_M_entry
+			M(i_index,j_index) = compute_M_entry(al,bl,i_index,j_index,def_scoring_view);
+			//toask: where should we care about non_default scoring views
+
+			// if (trace_debugging_output) {
+			//     std::cout << "M["<< i_index << "," << j_index << "]="
+			// 	      << M(i_index,j_index) << std::endl;
+			// }
+			}
+		}
+	}
+	else { // Original SPARSE recursion for max right ends
+		
+		//iterate through valid entries
+		
+		for (matidx_t i_index = 1;
+			 i_index < mapperA.number_of_valid_mat_pos(al);
+			 i_index++) {
+			/*
+			//tomark: constraints
+			// limit entries due to trace controller
+			pos_type min_col = std::max(bl+1,params->trace_controller.min_col(i));
+			pos_type max_col = std::min(br-1,params->trace_controller.max_col(i));
+			*/
+			for (matidx_t j_index = 1;
+			 j_index < mapperB.number_of_valid_mat_pos(bl);
+			 j_index++) {
+
+			// E and F matrix entries will be computed by compute_M_entry
+			M(i_index,j_index) = compute_M_entry(al,bl,i_index,j_index,def_scoring_view);
+			//toask: where should we care about non_default scoring views
+
+			// if (trace_debugging_output) {
+			//     std::cout << "M["<< i_index << "," << j_index << "]="
+			// 	      << M(i_index,j_index) << std::endl;
+			// }
+			}
+		}
+	}
 	// if (trace_debugging_output) {
 	//     std::cout << "align_M aligned M is :" << std::endl << M << std::endl;
 	// }
@@ -845,29 +892,34 @@ namespace LocARNA {
 				for (BasePairs::LeftAdjList::const_iterator arcB =
 						adjlB.begin(); arcB != adjlB.end(); ++arcB) {
 					scoring->set_closing_arcs(*arcA, *arcB);
-					std:cout << "fill_M_entries: " << al << "," << arcA->right() << "  " <<  bl << "," << arcB->right();
+					std::cout << "fill_M_entries: " << al << "," << arcA->right()-1 << "  " <<  bl << "," << arcB->right()-1 << std::endl;
 					//compute matrix M
 					//	    stopwatch.start("compM");
-					fill_M_entries(al, arcA->right(), bl, arcB->right());
+					fill_M_entries(al, arcA->right()-1, bl, arcB->right()-1);
+					std::cout << "fill_IA_entries: " << std::endl;
+					fill_IA_entries(al, *arcB, arcA->right()-1);
+					std::cout << "fill_IB_entries: " << std::endl;
+					fill_IB_entries(*arcA, bl, arcB->right()-1);
 					//	    stopwatch.stop("compM");
 
 				}
 			}
 
+
+
 			//TODO: Make the IA and IB calculations with exact right side(?)
 			// from aligner.cc: find maximum arc ends
-//			pos_type max_ar = al;
-//			pos_type max_br = bl;
+/*			pos_type max_ar = al;
+			pos_type max_br = bl;
 
 			// get the maximal right ends of any arc match with left ends (al,bl)
 			// in noLP mode, we don't consider cases without immediately enclosing arc match
-//			arc_matches.get_max_right_ends(al, bl, &max_ar, &max_br,
-//					params->no_lonely_pairs_);
+			arc_matches.get_max_right_ends(al, bl, &max_ar, &max_br,
+					params->no_lonely_pairs_);
 
 
 			//compute IA
 			//	    stopwatch.start("compIA");
-
 			for (BasePairs::LeftAdjList::const_iterator arcB =
 					adjlB.begin(); arcB != adjlB.end(); ++arcB) {
 				scoring->set_closing_arcs(BasePairs__Arc(0, al, max_ar) , *arcB); //TODO: Verfiy this, specially the constructor and idx
@@ -885,7 +937,7 @@ namespace LocARNA {
 				fill_IB_entries(*arcA, bl, max_br);
 			}
 			//	    stopwatch.stop("compIB");
-
+*/
 			// ------------------------------------------------------------
 			// now fill matrix D entries
 			//
@@ -942,12 +994,15 @@ namespace LocARNA {
 	    }
 	    
 	    // stopwatch.start("align top level");
+		scoring->set_closing_arcs(BasePairs__Arc(0, 0, seqA.length()),BasePairs__Arc(0, 0, seqB.length())); //TODO: check it
+
 	    fill_M_entries(ps_al, last_index_A, ps_bl, last_index_B);
 	    // tocheck: always use get_startA-1 (not zero) in
 	    // sparsification_mapper and other parts
 	    // stopwatch.stop("align top level");
 	    
-	    if (trace_debugging_output) std::cout << "M matrix:" << std::endl
+	    if (trace_debugging_output) std::cout << "M matrix: " << ps_al << "," << last_index_A <<
+	    		 "  " << ps_bl << "," << last_index_B << std::endl
 						  << M << std::endl;
 	    if (trace_debugging_output) {
 		std::cout << "M(" << last_index_A << "," 
