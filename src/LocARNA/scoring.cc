@@ -46,8 +46,8 @@ namespace LocARNA {
 	seqB(seqB_),
 	lambda_(0),
 	conditonal_scores(conditional_scores_),
-	closingA(0, 0, seqA_.length()),//TODO: What to set as index?
-	closingB(0, 0, seqB_.length()) //TODO: What to set as index?
+	closingA(0, 0, seqA_.length()+1),//TODO: What to set as index?
+	closingB(0, 0, seqB_.length()+1) //TODO: What to set as index?
     {
 
 #ifndef NDEBUG
@@ -86,9 +86,9 @@ namespace LocARNA {
 //		parent_arcA = Arc();
 //		parent_arcB = Arc();
 	context_al = 0;
-	context_ar = seqA_.length();
+	context_ar = seqA_.length()+1;
 	context_bl = 0;
-	context_br = seqB_.length();
+	context_br = seqB_.length()+1;
 
     }
 
@@ -114,8 +114,8 @@ namespace LocARNA {
 	seqB(seqB_),
 	lambda_(0),
 	conditonal_scores(conditional_scores_),
-	closingA(0, 0, seqA_.length()),//TODO: What to set as index?
-	closingB(0, 0, seqB_.length()) //TODO: What to set as index?
+	closingA(0, 0, seqA_.length()+1),//TODO: What to set as index?
+	closingB(0, 0, seqB_.length()+1) //TODO: What to set as index?
     {
     std::cout << "Scoring(ExtRnaDat..)" << std::endl;
 #ifndef NDEBUG
@@ -154,9 +154,9 @@ namespace LocARNA {
 //		parent_arcA = Arc();
 //		parent_arcB = Arc();
 	context_al = 0;
-	context_ar = seqA_.length();
+	context_ar = seqA_.length()+1;
 	context_bl = 0;
-	context_br = seqB_.length();
+	context_br = seqB_.length()+1;
 
     }
 
@@ -658,8 +658,6 @@ namespace LocARNA {
 
 		double probA = rna_dataA.arc_prob(arcA.left(), arcA.right());
 		double probB = rna_dataB.arc_prob(arcB.left(), arcB.right());
-		std::cout <<  "** arcA: " << arcA.left() << "," << arcA.right() << "=" << probA <<  std::endl;
-		std::cout <<  "** arcB: " << arcB.left() << "," << arcB.right() << "=" << probB <<  std::endl;
 
 		double joint_probA = ext_rna_dataA.arc_in_loop_prob(arcA.left(), arcA.right(),
 				 closingA.left(),closingA.right());
@@ -668,39 +666,43 @@ namespace LocARNA {
 		double prob_closingA = rna_dataA.arc_prob(closingA.left(), closingA.right());
 		double prob_closingB = rna_dataB.arc_prob(closingB.left(), closingB.right());
 
-		 std::cout << " closingA:" << closingA.left() << "," << closingA.right() << "=" << prob_closingA << std::endl;
-		 std::cout << " closingB:" << closingB.left() << "," << closingB.right() << "=" << prob_closingB << std::endl;
+		std::cout <<  "   arcA: " << arcA << "=" << probA <<
+				" closingA:" << closingA << "=" << prob_closingA <<
+				" jointA: " <<  joint_probA<< std::endl;
+
+		std::cout <<  "   arcB: " << arcB << "=" << probB <<
+				" closingB:" << closingB << "=" << prob_closingB
+				 <<  " jointB: " << joint_probB << std::endl;
 //
-		 std::cout << "     jointA: " <<  joint_probA << " | jointB: " << joint_probB << std::endl;
 
 
 
 		 assert (probA != 0);
 		 assert (probB != 0);
-		 score_t ret_score = 0;
-		 score_t cond_zero_penalty = 10;
+		 double ret_score = 0;
+		 score_t cond_zero_penalty = -5;
 
-		 if (closingA.left() == 0 && closingA.right() == seqA.length()) { //TODO: And or OR?
-			 ret_score += params->struct_weight/10.0 * log (probA);
+		 if (closingA.left() == 0 && closingA.right() == seqA.length()+1) { //TODO: And or OR?
+			 ret_score +=  log (probA);
 		 }
 		 else if ( prob_closingA != 0 && joint_probA != 0) {
-			 std::cout << "=======A " << params->struct_weight/10.0 * log (joint_probA/prob_closingA);
-			 ret_score += params->struct_weight/10.0 * log (joint_probA/prob_closingA);
+			 std::cout << "=======A " <<  log (joint_probA/prob_closingA);
+			 ret_score +=  log (joint_probA/prob_closingA);
 		 }
 		 else
 		 	 ret_score += cond_zero_penalty;
 
-		 if (closingB.left() == 0 && closingB.right() == seqB.length()) { //TODO: And or OR?
-				 ret_score += params->struct_weight/10.0 * log (probB);
+		 if (closingB.left() == 0 && closingB.right() == seqB.length()+1) { //TODO: And or OR?
+				 ret_score +=  log (probB);
 		 }
 		 else if ( prob_closingB != 0 && joint_probB != 0) {
-			 std::cout << "=======B " << params->struct_weight/10.0 * log (joint_probB/prob_closingB);
-			 ret_score += params->struct_weight/10.0 * log (joint_probB/prob_closingB);
+			 std::cout << "=======B " <<  log (joint_probB/prob_closingB);
+			 ret_score += log (joint_probB/prob_closingB);
 		 }
 		 else
 			 ret_score += cond_zero_penalty;
-		 std::cout << "-ret_score: " << -ret_score << std::endl;
-		 return -ret_score;
+		 std::cout << "ret_score: " << ret_score << " Score: " << params->struct_weight * (10.0+ret_score) << std::endl;
+		 return (score_t)(params->struct_weight * (10.0+ret_score));
 
 //		 return  + log (joint_probB/prob_closingB);
 
