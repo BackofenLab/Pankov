@@ -391,6 +391,10 @@ namespace LocARNA {
 	 */
 	template<class ScoringView>
 	infty_score_t compute_M_entry(index_t al, index_t bl, matidx_t index_i, matidx_t index_j,ScoringView sv);
+
+	void
+    fill_D_entry(const Arc &arcA,const Arc &arcB);
+
 //---------------------------------------------------------------------------------
 
 	/**
