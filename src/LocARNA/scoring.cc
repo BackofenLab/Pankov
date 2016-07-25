@@ -117,7 +117,6 @@ namespace LocARNA {
 	closingA(0, 0, seqA_.length()+1),//TODO: What to set as index?
 	closingB(0, 0, seqB_.length()+1) //TODO: What to set as index?
     {
-    std::cout << "Scoring(ExtRnaDat..)" << std::endl;
 #ifndef NDEBUG
 	if (params->ribofit || params->ribosum) {
 	    // check sequences
@@ -189,7 +188,7 @@ namespace LocARNA {
     }
 
 	void Scoring::set_closing_arcs(const Arc &closingA_, const Arc &closingB_) {
-		std::cout << "set_closing_arcs : " << closingA_.left() << "," << closingA_.right() << "   " <<closingB_.left() << "," << closingB_.right() << std::endl;
+//		std::cout << "set_closing_arcs : " << closingA_.left() << "," << closingA_.right() << "   " <<closingB_.left() << "," << closingB_.right() << std::endl;
 		closingA = Arc(closingA_.idx(), closingA_.left(), closingA_.right());
 		closingB = Arc(closingB_.idx(), closingB_.left(), closingB_.right());
 	}
@@ -359,7 +358,7 @@ namespace LocARNA {
 	    const Arc &a=bps.arc(i);
 
 	    double p = rna_data.arc_prob(a.left(),a.right());
-	    std::cout << "   " << a.left() << "," << a.right() << "=" << p << std::endl;
+//	    std::cout << "   " << a.left() << "," << a.right() << "=" << p << std::endl;
 	    weights[i] = probToWeight(p,exp_prob);
 	    
 	    if (params->stacking) {
@@ -386,9 +385,7 @@ namespace LocARNA {
     Scoring::precompute_weights() {
 	//score_t weight = 
 	//score_t cond_weight = probToWeight(cond_prob);
-	std::cout << "precompute_weights() A" << std::endl;
 	precompute_weights(rna_dataA,arc_matches->get_base_pairsA(),params->exp_probA,weightsA,stack_weightsA);
-	std::cout << "precompute_weights() B" << std::endl;
 	precompute_weights(rna_dataB,arc_matches->get_base_pairsB(),params->exp_probB,weightsB,stack_weightsB);
     }
 
@@ -653,8 +650,8 @@ namespace LocARNA {
 
 	if ( conditonal_scores ) { // Use conditional-prob scores
 //		std::cout << ext_rna_dataA.arc_in_loop_cutoff_prob() << std::endl;
-		std::cout << "params->tau_factor: " << params->tau_factor << std::endl;
-		assert (sequence_contribution == 0); //TODO: Temporary accept  tau to be only zero
+//		std::cout << "params->tau_factor: " << params->tau_factor << std::endl;
+//		assert (sequence_contribution == 0); //TODO: Temporary accept  tau to be only zero
 
 		double probA = rna_dataA.arc_prob(arcA.left(), arcA.right());
 		double probB = rna_dataB.arc_prob(arcB.left(), arcB.right());
@@ -666,6 +663,7 @@ namespace LocARNA {
 		double prob_closingA = rna_dataA.arc_prob(closingA.left(), closingA.right());
 		double prob_closingB = rna_dataB.arc_prob(closingB.left(), closingB.right());
 
+		/*
 		std::cout <<  "   arcA: " << arcA << "=" << probA <<
 				" closingA:" << closingA << "=" << prob_closingA <<
 				" jointA: " <<  joint_probA<< std::endl;
@@ -673,6 +671,7 @@ namespace LocARNA {
 		std::cout <<  "   arcB: " << arcB << "=" << probB <<
 				" closingB:" << closingB << "=" << prob_closingB
 				 <<  " jointB: " << joint_probB << std::endl;
+				 */
 //
 
 
@@ -686,7 +685,7 @@ namespace LocARNA {
 			 ret_score +=  log (probA);
 		 }
 		 else if ( prob_closingA != 0 && joint_probA != 0) {
-			 std::cout << "=======A " <<  log (joint_probA/prob_closingA);
+//			 std::cout << "=======A " <<  log (joint_probA/prob_closingA);
 			 ret_score +=  log (joint_probA/prob_closingA);
 		 }
 		 else
@@ -696,12 +695,12 @@ namespace LocARNA {
 				 ret_score +=  log (probB);
 		 }
 		 else if ( prob_closingB != 0 && joint_probB != 0) {
-			 std::cout << "=======B " <<  log (joint_probB/prob_closingB);
+//			 std::cout << "=======B " <<  log (joint_probB/prob_closingB);
 			 ret_score += log (joint_probB/prob_closingB);
 		 }
 		 else
 			 ret_score += cond_zero_penalty;
-		 std::cout << "ret_score: " << ret_score << " Score: " << params->struct_weight * (10.0+ret_score) << std::endl;
+//		 std::cout << "ret_score: " << ret_score << " Score: " << params->struct_weight * (10.0+ret_score) << std::endl;
 		 return (score_t)(params->struct_weight * (10.0+ret_score));
 
 //		 return  + log (joint_probB/prob_closingB);

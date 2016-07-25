@@ -17,7 +17,7 @@
 
 namespace LocARNA {
 
-    bool trace_debugging_output=true; //!< a static switch to enable generating debugging logs
+    bool trace_debugging_output=false; //!< a static switch to enable generating debugging logs
 
 
     // ------------------------------------------------------------
@@ -463,7 +463,6 @@ namespace LocARNA {
 
 	    seq_pos_t i_seq_pos = mapperA.get_pos_in_seq_new(al,i_index);
 	    if (trace_debugging_output)
-		std::cout << "i_index:" << i_index << " i_seq_pos:" << i_seq_pos << std::endl;
 	    // if (params->trace_controller.min_col(i)>bl) break;
 	    // no trace controller in this version
 	    
@@ -892,14 +891,14 @@ namespace LocARNA {
 				for (BasePairs::LeftAdjList::const_iterator arcB =
 						adjlB.begin(); arcB != adjlB.end(); ++arcB) {
 					scoring->set_closing_arcs(*arcA, *arcB);
-					std::cout << "fill_M_entries: " << al << "," << arcA->right() << "  " <<  bl << "," << arcB->right() << std::endl;
-					std::cout << "                 arcA:" <<  *arcA << "  arcB" << *arcB << std::endl;
+					if (trace_debugging_output) {
+						std::cout << "fill_M_entries: " << al << "," << arcA->right() << "  " <<  bl << "," << arcB->right() << std::endl;
+						std::cout << "                 arcA:" <<  *arcA << "  arcB" << *arcB << std::endl;
+					}
 					//compute matrix M
 					//	    stopwatch.start("compM");
 					fill_M_entries(al, arcA->right(), bl, arcB->right());
-					std::cout << "fill_IA_entries: " << std::endl;
 					fill_IA_entries(al, *arcB, arcA->right());
-					std::cout << "fill_IB_entries: " << std::endl;
 					fill_IB_entries(*arcA, bl, arcB->right());
 					//	    stopwatch.stop("compM");
 
@@ -1296,7 +1295,6 @@ namespace LocARNA {
 
 	infty_score_t gap_score = jumpGapCostA + jumpGapCostB;
 
-	std::cout << "? " << sv.D(arcA, arcB) << " == " << (infty_score_t)(gap_score + opening_cost_A + opening_cost_B +  M(ar_prev_mat_idx_pos, br_prev_mat_idx_pos) ) << std::endl;
 	if (sv.D(arcA, arcB) == (infty_score_t)(gap_score + opening_cost_B + Emat(ar_prev_mat_idx_pos, br_prev_mat_idx_pos)))
 	    {
 		trace_E(al, ar_prev_mat_idx_pos, bl, br_prev_mat_idx_pos, false, def_scoring_view);
