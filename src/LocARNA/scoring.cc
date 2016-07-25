@@ -713,7 +713,6 @@ namespace LocARNA {
 		;
 	}
 	else if (! params->mea_scoring) { // Usual case
-	    std::cout << "weights " << weightsA[arcA.idx()] << "+" << weightsB[arcB.idx()] << std::endl;
 		return
 		// base match contribution
 		// (also for arc-match add terms for the base match on both ends, weighted by tau_factor)
