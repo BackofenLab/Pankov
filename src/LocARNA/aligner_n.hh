@@ -276,6 +276,8 @@ namespace LocARNA {
 	Arc traceback_closing_arcA;
 	Arc traceback_closing_arcB;
 
+	bool is_innermost_arcA;
+	bool is_innermost_arcB;
 	// ============================================================
 
 

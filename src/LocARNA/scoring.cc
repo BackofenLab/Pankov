@@ -607,7 +607,7 @@ namespace LocARNA {
 
 
     score_t
-    Scoring::arcmatch(const Arc &arcA, const Arc &arcB, bool stacked) const {
+    Scoring::arcmatch(const Arc &arcA, const Arc &arcB, bool stacked, bool non_cond) const {
 	// this method is disallowed with explicit arcmatch scores
 	assert(!arc_matches->explicit_scores());
 
@@ -681,27 +681,38 @@ namespace LocARNA {
 		 double ret_score = 0;
 		 score_t cond_zero_penalty = -10;
 
-		 if (closingA.left() == 0 && closingA.right() == seqA.length()+1) { //TODO: And or OR?
+//		 if (closingA.left() == 0 && closingA.right() == seqA.length()+1) { //TODO: And or OR?
+		 if (non_cond)
+		 {
 			 ret_score +=  log (probA);
 		 }
-		 else if ( probA != 0 && joint_probA != 0) {
+		 else
+			 if ( probA != 0 && joint_probA != 0) {
 //			 std::cout << "=======A " <<  log (joint_probA/prob_closingA);
 			 ret_score +=  log (joint_probA/probA);
 		 }
 		 else
 		 	 ret_score += cond_zero_penalty;
 
-		 if (closingB.left() == 0 && closingB.right() == seqB.length()+1) { //TODO: And or OR?
-				 ret_score +=  log (probB);
+//		 if (closingB.left() == 0 && closingB.right() == seqB.length()+1) { //TODO: And or OR?
+		 if (non_cond)
+		 {
+			ret_score +=  log (probB);
 		 }
-		 else if ( probB != 0 && joint_probB != 0) {
+		 else
+			 if ( probB != 0 && joint_probB != 0) {
 //			 std::cout << "=======B " <<  log (joint_probB/prob_closingB);
 			 ret_score += log (joint_probB/probB);
 		 }
 		 else
 			 ret_score += cond_zero_penalty;
 //		 std::cout << "ret_score: " << ret_score << " Score: " << params->struct_weight * (10.0+ret_score) << std::endl;
-		 return (score_t)(params->struct_weight * (5.0+ret_score));
+		 if (non_cond)
+		 {
+			 return (score_t)(params->struct_weight * (ret_score));
+		 }
+		 else
+			 return (score_t)(params->struct_weight * (5.0+ret_score));
 
 //		 return  + log (joint_probB/prob_closingB);
 

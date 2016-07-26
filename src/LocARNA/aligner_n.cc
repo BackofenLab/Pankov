@@ -420,7 +420,8 @@ namespace LocARNA {
 
 		if (arc_match_score > max_score) {
 		    max_score = arc_match_score;
-			    
+			is_innermost_arcA = false;
+			is_innermost_arcB = false;
 		     if (trace_debugging_output)	{
 		     	std::cout << "compute_M_entry arcs " << arcA << " , "
 		     		  << arcB << "arc match score: " << arc_match_score
@@ -724,6 +725,9 @@ namespace LocARNA {
 
 		infty_score_t m = std::max( mm, std::max(mdel, mins));
 
+		//TODO: IMPORTANT REASON to add prob arc score here is ambigiou
+		if (is_innermost_arcA || is_innermost_arcB)
+			m = m + scoring->arcmatch(arcA, arcB, false, true);
 		//------------------------------
 
 
@@ -1002,6 +1006,8 @@ namespace LocARNA {
 						std::cout << "fill_M_entries: " << al << "," << arcA->right() << "  " <<  bl << "," << arcB->right() << std::endl;
 						std::cout << "                 arcA:" <<  *arcA << "  arcB" << *arcB << std::endl;
 					}
+					is_innermost_arcA = true;
+					is_innermost_arcB = true;
 					//compute matrix M
 					//	    stopwatch.start("compM");
 					fill_M_entries(al, arcA->right(), bl, arcB->right());
@@ -1335,7 +1341,8 @@ namespace LocARNA {
 	traceback_closing_arcA = Arc(0, arcA.left(), arcA.right());
 	traceback_closing_arcB = Arc(0, arcB.left(), arcB.right());
 	sv.scoring()->set_closing_arcs(traceback_closing_arcA, traceback_closing_arcB);
-
+	is_innermost_arcA = true;
+	is_innermost_arcB = true;
 	seq_pos_t al = arcA.left();
 	seq_pos_t ar_seq_pos = arcA.right();
 	seq_pos_t bl = arcB.left();
@@ -1408,16 +1415,20 @@ namespace LocARNA {
 		std::cout << "?==" << gap_score << "+" << opening_cost_A<< "+" <<
 				opening_cost_B << "+" <<  "M(" << ar_prev_mat_idx_pos << br_prev_mat_idx_pos << "):"<<M(ar_prev_mat_idx_pos, br_prev_mat_idx_pos) << std::endl;
 	}
+	score_t inner_score = 0;
+	if (is_innermost_arcA || is_innermost_arcB) {
+		inner_score = sv.scoring()->arcmatch(arcA, arcB, false, true);
+	}
 
-	if (sv.D(arcA, arcB) == (infty_score_t)(gap_score + opening_cost_B + Emat(ar_prev_mat_idx_pos, br_prev_mat_idx_pos)))
+	if (sv.D(arcA, arcB) == (infty_score_t)(gap_score + opening_cost_B + inner_score+ Emat(ar_prev_mat_idx_pos, br_prev_mat_idx_pos)))
 	    {
 		trace_E(al, ar_prev_mat_idx_pos, bl, br_prev_mat_idx_pos, false, def_scoring_view);
 	    }
-	else if (sv.D(arcA, arcB) == (infty_score_t)(gap_score + opening_cost_A + Fmat(ar_prev_mat_idx_pos, br_prev_mat_idx_pos)))
+	else if (sv.D(arcA, arcB) == (infty_score_t)(gap_score + opening_cost_A + inner_score+ Fmat(ar_prev_mat_idx_pos, br_prev_mat_idx_pos)))
 	    {
 		trace_F(al, ar_prev_mat_idx_pos, bl, br_prev_mat_idx_pos, false, def_scoring_view);
 	    }
-	else if (sv.D(arcA, arcB) == (infty_score_t)(gap_score + opening_cost_A + opening_cost_B +  M(ar_prev_mat_idx_pos, br_prev_mat_idx_pos) ))
+	else if (sv.D(arcA, arcB) == (infty_score_t)(gap_score + opening_cost_A + inner_score+ opening_cost_B +  M(ar_prev_mat_idx_pos, br_prev_mat_idx_pos) ))
 	    {
 		trace_M(al, ar_prev_mat_idx_pos, bl, br_prev_mat_idx_pos, false, def_scoring_view);
 	    }

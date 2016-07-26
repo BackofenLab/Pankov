@@ -624,7 +624,7 @@ namespace LocARNA {
 	 * arc_matches->explicit_scores()==true (This results in a
 	 * run-time error if !NDEBUG).
 	 */
-	score_t arcmatch(const BasePairs__Arc &arcA, const BasePairs__Arc &arcB, bool stacked=false) const;
+	score_t arcmatch(const BasePairs__Arc &arcA, const BasePairs__Arc &arcB, bool stacked=false, bool non_cond=false) const;
 
 
 	/** 
