@@ -709,10 +709,10 @@ namespace LocARNA {
 //		 std::cout << "ret_score: " << ret_score << " Score: " << params->struct_weight * (10.0+ret_score) << std::endl;
 		 if (non_cond)
 		 {
-			 return (score_t)(params->struct_weight * (ret_score));
+			 return (score_t)(params->struct_weight * (5.0+ret_score))+( (params->tau_factor * sequence_contribution) / 100 );
 		 }
 		 else
-			 return (score_t)(params->struct_weight * (5.0+ret_score));
+			 return (score_t)(params->struct_weight * (5.0+ret_score))+( (params->tau_factor * sequence_contribution) / 100 );
 
 //		 return  + log (joint_probB/prob_closingB);
 
