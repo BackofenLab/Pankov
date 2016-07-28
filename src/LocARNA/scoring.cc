@@ -681,28 +681,26 @@ namespace LocARNA {
 		 double ret_score = 0;
 		 score_t cond_zero_penalty = -10;
 
-//		 if (closingA.left() == 0 && closingA.right() == seqA.length()+1) { //TODO: And or OR?
-		 if (non_cond)
-		 {
+		 if (closingA.left() == 0 && closingA.right() == seqA.length()+1) { //TODO: And or OR?
+//		 if (non_cond){
 			 ret_score +=  log (probA);
 		 }
 		 else
 			 if ( probA != 0 && joint_probA != 0) {
 //			 std::cout << "=======A " <<  log (joint_probA/prob_closingA);
-			 ret_score +=  log (joint_probA/probA);
+			 ret_score +=  log (joint_probA/prob_closingA);
 		 }
 		 else
 		 	 ret_score += cond_zero_penalty;
 
-//		 if (closingB.left() == 0 && closingB.right() == seqB.length()+1) { //TODO: And or OR?
-		 if (non_cond)
-		 {
+		 if (closingB.left() == 0 && closingB.right() == seqB.length()+1) { //TODO: And or OR?
+//		 if (non_cond){
 			ret_score +=  log (probB);
 		 }
 		 else
 			 if ( probB != 0 && joint_probB != 0) {
 //			 std::cout << "=======B " <<  log (joint_probB/prob_closingB);
-			 ret_score += log (joint_probB/probB);
+			 ret_score += log (joint_probB/prob_closingB);
 		 }
 		 else
 			 ret_score += cond_zero_penalty;
