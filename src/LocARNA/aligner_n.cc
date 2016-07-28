@@ -18,7 +18,7 @@
 namespace LocARNA {
 
     bool trace_debugging_output=false; //!< a static switch to enable generating debugging logs
-
+    bool do_cond_bottom_up=false;
 
     // ------------------------------------------------------------
     // AlignerN: align / compute similarity
@@ -726,8 +726,10 @@ namespace LocARNA {
 		infty_score_t m = std::max( mm, std::max(mdel, mins));
 
 		//TODO: IMPORTANT REASON to add prob arc score here is ambigiou
+		if (do_cond_bottom_up) {
 		if (is_innermost_arcA || is_innermost_arcB)
 			m = m + scoring->arcmatch(arcA, arcB, false, true);
+		}
 		//------------------------------
 
 
@@ -1416,9 +1418,10 @@ namespace LocARNA {
 				opening_cost_B << "+" <<  "M(" << ar_prev_mat_idx_pos << br_prev_mat_idx_pos << "):"<<M(ar_prev_mat_idx_pos, br_prev_mat_idx_pos) << std::endl;
 	}
 	score_t inner_score = 0;
-	if (is_innermost_arcA || is_innermost_arcB) {
-		inner_score = sv.scoring()->arcmatch(arcA, arcB, false, true);
-	}
+	if (do_cond_bottom_up)
+		{if (is_innermost_arcA || is_innermost_arcB) {
+			inner_score = sv.scoring()->arcmatch(arcA, arcB, false, true);
+		}}
 
 	if (sv.D(arcA, arcB) == (infty_score_t)(gap_score + opening_cost_B + inner_score+ Emat(ar_prev_mat_idx_pos, br_prev_mat_idx_pos)))
 	    {
