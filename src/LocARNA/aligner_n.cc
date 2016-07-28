@@ -1433,6 +1433,7 @@ namespace LocARNA {
 	    }
 	else if (sv.D(arcA, arcB) == (infty_score_t)(gap_score + opening_cost_A + inner_score+ opening_cost_B +  M(ar_prev_mat_idx_pos, br_prev_mat_idx_pos) ))
 	    {
+//		std::cout << "traceD-M " << arcA << "  " << arcB << std::endl;
 		trace_M(al, ar_prev_mat_idx_pos, bl, br_prev_mat_idx_pos, false, def_scoring_view);
 	    }
 	else //todo: throw exception?

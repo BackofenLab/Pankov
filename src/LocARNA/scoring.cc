@@ -675,7 +675,7 @@ namespace LocARNA {
 //
 
 
-
+//			std::cout << "sequence_contribution: " << sequence_contribution << std::endl;
 		 assert (probA != 0);
 		 assert (probB != 0);
 		 double ret_score = 0;
@@ -699,18 +699,29 @@ namespace LocARNA {
 		 }
 		 else
 			 if ( probB != 0 && joint_probB != 0) {
-//			 std::cout << "=======B " <<  log (joint_probB/prob_closingB);
+//			 std::cout << "=======B " <<  log (joint_probB/prob_closingB) << std::endl;
 			 ret_score += log (joint_probB/prob_closingB);
 		 }
 		 else
 			 ret_score += cond_zero_penalty;
 //		 std::cout << "ret_score: " << ret_score << " Score: " << params->struct_weight * (10.0+ret_score) << std::endl;
-		 if (non_cond)
-		 {
-			 return (score_t)(params->struct_weight * (5.0+ret_score))+( (params->tau_factor * sequence_contribution) / 100 );
+//		 if (non_cond){
+
+		 if ((closingA.left() == 0 && (closingA.right() == seqA.length()+1))
+				 ||
+				 (closingB.left() == 0 && closingB.right() == seqB.length()+1))
+				 {
+
+			 return (score_t)(params->struct_weight * (5+ret_score))+( (params->tau_factor * sequence_contribution) / 100 );
 		 }
 		 else
-			 return (score_t)(params->struct_weight * (5.0+ret_score))+( (params->tau_factor * sequence_contribution) / 100 );
+		 {
+			 ret_score = -1.0/ret_score;
+			 if (ret_score > 10)
+				 ret_score = 10;
+
+			 return (score_t)(params->struct_weight * (ret_score))+( (params->tau_factor * sequence_contribution) / 100 );
+		 }
 
 //		 return  + log (joint_probB/prob_closingB);
 
