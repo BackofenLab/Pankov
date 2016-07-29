@@ -678,32 +678,38 @@ namespace LocARNA {
 //			std::cout << "sequence_contribution: " << sequence_contribution << std::endl;
 		 assert (probA != 0);
 		 assert (probB != 0);
-		 double ret_score = 0;
+		 double scoreA = 0;
+		 double scoreB = 0;
 		 score_t cond_zero_penalty = -10;
 
 		 if (closingA.left() == 0 && closingA.right() == seqA.length()+1) { //TODO: And or OR?
 //		 if (non_cond){
-			 ret_score +=  log (probA);
+			 scoreA =  log (probA);
 		 }
 		 else
 			 if ( probA != 0 && joint_probA != 0) {
 //			 std::cout << "=======A " <<  log (joint_probA/prob_closingA);
-			 ret_score +=  log (joint_probA/prob_closingA);
+			 scoreA =  log (joint_probA/prob_closingA);
+			 if (scoreA > log(0.5))
+				scoreA += 10;
+
 		 }
 		 else
-		 	 ret_score += cond_zero_penalty;
+		 	 scoreA = cond_zero_penalty;
 
 		 if (closingB.left() == 0 && closingB.right() == seqB.length()+1) { //TODO: And or OR?
 //		 if (non_cond){
-			ret_score +=  log (probB);
+			scoreB =  log (probB);
 		 }
 		 else
 			 if ( probB != 0 && joint_probB != 0) {
 //			 std::cout << "=======B " <<  log (joint_probB/prob_closingB) << std::endl;
-			 ret_score += log (joint_probB/prob_closingB);
+			 scoreB = log (joint_probB/prob_closingB);
+			 if (scoreB > log(0.5))
+				 scoreB += 10;
 		 }
 		 else
-			 ret_score += cond_zero_penalty;
+			 scoreB = cond_zero_penalty;
 //		 std::cout << "ret_score: " << ret_score << " Score: " << params->struct_weight * (10.0+ret_score) << std::endl;
 //		 if (non_cond){
 
@@ -712,11 +718,11 @@ namespace LocARNA {
 				 (closingB.left() == 0 && closingB.right() == seqB.length()+1))
 				 {
 
-			 return (score_t)(params->struct_weight * (5+ret_score))+( (params->tau_factor * sequence_contribution) / 100 );
+			 return (score_t)(params->struct_weight * (5+scoreA))+( (params->tau_factor * sequence_contribution) / 100 );
 		 }
 		 else
 		 {
-			 return (score_t)(params->struct_weight * (5+ret_score))+( (params->tau_factor * sequence_contribution) / 100 );
+			 return (score_t)(params->struct_weight * (5+scoreB))+( (params->tau_factor * sequence_contribution) / 100 );
 		 }
 
 //		 return  + log (joint_probB/prob_closingB);
