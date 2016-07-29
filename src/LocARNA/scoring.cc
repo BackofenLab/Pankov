@@ -716,11 +716,7 @@ namespace LocARNA {
 		 }
 		 else
 		 {
-			 ret_score = -1.0/ret_score;
-			 if (ret_score > 10)
-				 ret_score = 10;
-
-			 return (score_t)(params->struct_weight * (ret_score))+( (params->tau_factor * sequence_contribution) / 100 );
+			 return (score_t)(params->struct_weight * (5+ret_score))+( (params->tau_factor * sequence_contribution) / 100 );
 		 }
 
 //		 return  + log (joint_probB/prob_closingB);
