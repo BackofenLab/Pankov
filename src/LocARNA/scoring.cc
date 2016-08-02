@@ -849,11 +849,11 @@ namespace LocARNA {
 		double joint_probX = ext_rna_dataX.arc_in_loop_prob(arcX.left(), arcX.right(),
 				 closingX.left(),closingX.right());
 		double prob_closingX = rna_dataX.arc_prob(closingX.left(), closingX.right());
-    /*	std::cout << "arcDel_conditional" << std::endl;
+    	/*std::cout << "arcDel_conditional" << std::endl;
 		std::cout <<  "   arcX:"  << arcX << "=" << probX <<
 				" closingX:" << closingX << "=" << prob_closingX <<
 				" jointX: " <<  joint_probX<< std::endl;
-     */
+    	 */
 		 assert (probX != 0);
 		 double scoreX = 0;
 		 score_t cond_zero_penalty = -10;
@@ -890,12 +890,15 @@ namespace LocARNA {
 
 	if (! params->mea_scoring) {
 	if ( conditonal_scores ) { // Use conditional-prob scores
+		score_t ret_cond;
 		if (isA)
-			return arcDel_conditional(arcX, seqA, rna_dataA, ext_rna_dataA, closingA) +
+			ret_cond = arcDel_conditional(arcX, seqA, rna_dataA, ext_rna_dataA, closingA) +
 					loop_indel_score(gapX(arcX.left(), isA) + gapX(arcX.right(), isA));
 		else
-			return arcDel_conditional(arcX, seqB, rna_dataB, ext_rna_dataB, closingB) +
+			ret_cond = arcDel_conditional(arcX, seqB, rna_dataB, ext_rna_dataB, closingB) +
 					loop_indel_score(gapX(arcX.left(), isA) + gapX(arcX.right(), isA));
+//		std::cout << "   ret_cond:" << ret_cond << std::endl;
+		return ret_cond;
 	}
 	else{
 	return

@@ -212,6 +212,7 @@ namespace LocARNA {
 	    }
 	    infty_score_t arc_indel_score_extend =
 		IXD(arcX, arcY, isA) + sv.scoring()->arcDel(arcX, isA) + gap_score;
+
 	    if (arc_indel_score_extend > max_score) {
 		max_score = arc_indel_score_extend;
 	    }
@@ -222,6 +223,9 @@ namespace LocARNA {
 	    if (arc_indel_score_open > max_score) {
 		max_score = arc_indel_score_open;
 	    }
+
+//	    std::cout << ">>> arc_indel_score_extend=IXD(" << arcX << "," << arcY<< ")"<< IXD(arcX, arcY, isA) << "+" <<  sv.scoring()->arcDel(arcX, isA) << "+" << gap_score
+//	    		<< "="<< arc_indel_score_extend << "  arc_indel_score_open:" << arc_indel_score_open << std::endl;
 	}
 	
 	return max_score;
@@ -558,6 +562,7 @@ namespace LocARNA {
 
 
 	    IBmat(arcA.idx(), j_index) = compute_IX(bl, arcA, j_index, false, def_scoring_view);
+//	    std::cout << "IBmat( << " << arcA.idx() << "," <<  j_index << ")=" << IBmat(arcA.idx(), j_index) << std::endl;
 	    //fill IBD matrix entries
 	    seq_pos_t j_seq_pos = mapperB.get_pos_in_seq_new(bl, j_index);
 	    //	std::cout << "j_seq_pos=" << j_seq_pos  << std::endl;
@@ -567,11 +572,11 @@ namespace LocARNA {
 		{
 		    const Arc& arcB = bpsB.arc(bl,j_seq_pos);
 		    if (trace_debugging_output)
-			std::cout << "exists arcB" << arcB << "  current IBDmat(" << arcA.idx() << "," << arcB.idx()<<")=" << IBDmat(arcA.idx(), arcB.idx()) << std::endl;
+		    	std::cout << "exists arcB" << arcB << "  current IBDmat(" << arcA.idx() << "," << arcB.idx()<<")=" << IBDmat(arcA.idx(), arcB.idx()) << std::endl;
 
 		    IBDmat(arcA.idx(), arcB.idx()) = IBmat(arcA.idx(), j_index-1) + getGapCostBetween(j_prev_seq_pos, j_seq_pos, false);
 		    if (trace_debugging_output)
-			std::cout << "IBDmat(" << arcA.idx() << "," << arcB.idx()<<")=" << IBDmat(arcA.idx(), arcB.idx()) << std::endl;
+		    	std::cout << "IBDmat(" << arcA.idx() << "," << arcB.idx()<<")=" << IBDmat(arcA.idx(), arcB.idx()) << std::endl;
 		}
 	}
 	//	std::cout << "fill_IB_entries arcA: " << arcA << " bl: "<< bl <<  " IBmat: " << std::endl << IBmat << std::endl;
@@ -745,7 +750,7 @@ namespace LocARNA {
 		IADmat(arcA.idx(),arcB.idx()) = ia; //TODO: avoid recomputation
 		IBDmat(arcA.idx(),arcB.idx()) = ib; //TODO: avoid recomputation
 		if (trace_debugging_output) {
-		std::cout << "m=" << m << " ia=" << ia << " ib=" << ib << std::endl;
+		std::cout << "m=" << m << " ia=" << ia << " ib=" << IBmat(arcA.idx(),br_prev_mat_idx_pos) <<"+" << jumpGapCostB << "=" << ib << std::endl;
 		}
 
 		//	assert(ia == iad);
@@ -759,8 +764,8 @@ namespace LocARNA {
 
 		D(arcA, arcB) = std::max(m, ia);
 		D(arcA, arcB) = std::max(D(arcA,arcB), ib );
-
-//		 std::cout <<"DD["<< arcA << "," <<arcB <<"]:" << D(arcA, arcB) << std::endl;
+		if (trace_debugging_output)
+		 std::cout <<"DD["<< arcA << "," <<arcB <<"]:" << D(arcA, arcB) << std::endl;
 
     }
     // compute the entries in the D matrix that
@@ -1140,7 +1145,7 @@ namespace LocARNA {
     // ------------------------------------------------------------
 
     template <class ScoringView>
-    void AlignerN::trace_IX (pos_type xl, matidx_t i_index, 
+    void AlignerN::trace_IX(pos_type xl, matidx_t i_index,
 			     const Arc &arcY, bool isA, ScoringView sv)
     {
 	const BasePairs &bpsX = isA? bpsA : bpsB;
@@ -1202,9 +1207,16 @@ namespace LocARNA {
 		if (gap_score.is_finite())
 		    {    // convert the base gap score to the loop gap score
 			gap_score = (infty_score_t)(sv.scoring()->loop_indel_score( gap_score.finite_value()));
+//			 std::cout << "IBDmat(arcY.idx(),arcX.idx()) before:" << IBDmat(arcY.idx(),arcX.idx()) <<std::endl;
 
+//			std::cout << "*** sv.D(" << arcX << "," <<  arcY << "," <<  isA << ")=" << sv.D(arcX, arcY, isA) << std::endl;
+			assert (! (IXD(arcX, arcY, isA) == infty_score_t::neg_infty) );
 			infty_score_t arc_indel_score_extend = IXD(arcX, arcY, isA) + sv.scoring()->arcDel(arcX, isA) + gap_score;
+			infty_score_t arc_indel_score_open = sv.D(arcX, arcY, isA) + sv.scoring()->arcDel(arcX, isA) + gap_score + sv.scoring()->indel_opening_loop();
 
+//			std::cout << "arc_indel_score_extend:" << arc_indel_score_extend << " arc_indel_score_open:" << arc_indel_score_open
+//					<<  "  IX:" <<  IX(i_index, arcY, isA) <<std::endl;
+//			std::cout << "arc_indel_score_extend: " << IXD(arcX, arcY, isA) << "+" <<  sv.scoring()->arcDel(arcX, isA) << "+" <<  gap_score << std::endl;
 			if ( IX(i_index, arcY, isA) == arc_indel_score_extend) {
 
 			    if (trace_debugging_output) std::cout << "Arc Deletion extension for X " << (isA?"A ":"B ") << "arcX=" << arcX << " arcY=" << arcY << std::endl;
@@ -1214,8 +1226,7 @@ namespace LocARNA {
 				    for (size_type k = xl+1; k <= arcX.left(); k++) {
 					alignment.append(k, -2);
 				    }
-					IADmat(arcX.idx(),arcY.idx()) = sv.D(arcX, arcY); //tocheck: donna know why :-D
-
+//				    IADmat(arcX.idx(),arcY.idx()) = sv.D(arcX, arcY); //tocheck: donna know why :-D
 				    trace_IXD(arcX, arcY, isA, sv);
 
 				    alignment.append(arcX.right(), -2);
@@ -1226,7 +1237,7 @@ namespace LocARNA {
 				    for (size_type k = xl+1; k <= arcX.left(); k++) {
 					alignment.append(-2, k);
 				    }
-				    IBDmat(arcY.idx(),arcX.idx()) = sv.D(arcY, arcX); //tocheck: donna know why :-D
+//				    IBDmat(arcY.idx(),arcX.idx()) = sv.D(arcY, arcX); //tocheck: donna know why :-D
 				    trace_IXD(arcY, arcX, isA, sv);
 
 				    alignment.append(-2, arcX.right());
@@ -1235,7 +1246,6 @@ namespace LocARNA {
 			    return;
 			}
 
-			infty_score_t arc_indel_score_open = sv.D(arcX, arcY, isA) + sv.scoring()->arcDel(arcX, isA) + gap_score + sv.scoring()->indel_opening_loop();
 
 			if ( IX(i_index, arcY, isA) == arc_indel_score_open) {
 
@@ -1321,7 +1331,7 @@ namespace LocARNA {
 		sv.scoring()->set_closing_arcs(traceback_closing_arcA, traceback_closing_arcB);
 		fill_IB_entries(arcA, bl, br_seq_pos);
 		if (trace_debugging_output)
-		    std::cout << "IXD(" << arcA.idx() << "," << arcB.idx() << ")="  << IBDmat(arcA.idx(), arcB.idx()) << " ?== " << IB(arcA, br_prev_mat_idx_pos ) + jumpGapCostB << std::endl;
+		    std::cout << "IXD(" << arcA.idx() << "," << arcB.idx() << ")="  << IBDmat(arcA.idx(), arcB.idx()) << " ?== " << IB(arcA, br_prev_mat_idx_pos ) << "+" << jumpGapCostB << std::endl;
 
 		if (IBDmat(arcA.idx(), arcB.idx()) ==  IB(arcA, br_prev_mat_idx_pos ) + jumpGapCostB )
 		    {
@@ -1346,7 +1356,7 @@ namespace LocARNA {
 	
 	assert(!params->no_lonely_pairs_); //take special care of noLP in this method
 
-	if (trace_debugging_output) std::cout << "****trace_D****" << arcA << " " << arcB <<std::endl;
+	if (trace_debugging_output) std::cout << "****trace_D****" << arcA << " " << arcB  << "sv.D(arcA, arcB)=" << sv.D(arcA, arcB) <<std::endl;
 	assert(! params->struct_local_);
 
 	traceback_closing_arcA = Arc(0, arcA.left(), arcA.right());
