@@ -841,11 +841,19 @@ namespace LocARNA {
     score_t
     Scoring::arcDel_conditional(const Arc &arcX, const Sequence &seqX, const RnaData &rna_dataX,
         		const ExtRnaData &ext_rna_dataX, const Arc& closingX) const {
+
+
+
 		double probX = rna_dataX.arc_prob(arcX.left(), arcX.right());
 
 		double joint_probX = ext_rna_dataX.arc_in_loop_prob(arcX.left(), arcX.right(),
 				 closingX.left(),closingX.right());
 		double prob_closingX = rna_dataX.arc_prob(closingX.left(), closingX.right());
+    /*	std::cout << "arcDel_conditional" << std::endl;
+		std::cout <<  "   arcX:"  << arcX << "=" << probX <<
+				" closingX:" << closingX << "=" << prob_closingX <<
+				" jointX: " <<  joint_probX<< std::endl;
+     */
 		 assert (probX != 0);
 		 double scoreX = 0;
 		 score_t cond_zero_penalty = -10;
