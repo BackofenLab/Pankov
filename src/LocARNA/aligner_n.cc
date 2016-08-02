@@ -1276,6 +1276,10 @@ namespace LocARNA {
 	if (trace_debugging_output) std::cout << "****trace_IXD****" << (isA?"A ":"B ") << arcA << " " << arcB <<std::endl;
 	assert(! params->struct_local_);
 
+	traceback_closing_arcA = Arc(0, arcA.left(), arcA.right());
+	traceback_closing_arcB = Arc(0, arcB.left(), arcB.right());
+	sv.scoring()->set_closing_arcs(traceback_closing_arcA, traceback_closing_arcB);
+
 	seq_pos_t al = arcA.left();
 	seq_pos_t ar_seq_pos = arcA.right();
 	seq_pos_t bl = arcB.left();

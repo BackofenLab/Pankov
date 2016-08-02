@@ -690,8 +690,6 @@ namespace LocARNA {
 			 if ( probA != 0 && joint_probA != 0) {
 //			 std::cout << "=======A " <<  log (joint_probA/prob_closingA);
 			 scoreA =  log (joint_probA/prob_closingA);
-			 if (scoreA > log(0.5))
-				scoreA += 10;
 
 		 }
 		 else
@@ -705,8 +703,6 @@ namespace LocARNA {
 			 if ( probB != 0 && joint_probB != 0) {
 //			 std::cout << "=======B " <<  log (joint_probB/prob_closingB) << std::endl;
 			 scoreB = log (joint_probB/prob_closingB);
-			 if (scoreB > log(0.5))
-				 scoreB += 10;
 		 }
 		 else
 			 scoreB = cond_zero_penalty;
@@ -842,6 +838,39 @@ namespace LocARNA {
 	return score; // modify for normalized alignment
     }
 
+    score_t
+    Scoring::arcDel_conditional(const Arc &arcX, const Sequence &seqX, const RnaData &rna_dataX,
+        		const ExtRnaData &ext_rna_dataX, const Arc& closingX) const {
+		double probX = rna_dataX.arc_prob(arcX.left(), arcX.right());
+
+		double joint_probX = ext_rna_dataX.arc_in_loop_prob(arcX.left(), arcX.right(),
+				 closingX.left(),closingX.right());
+		double prob_closingX = rna_dataX.arc_prob(closingX.left(), closingX.right());
+		 assert (probX != 0);
+		 double scoreX = 0;
+		 score_t cond_zero_penalty = -10;
+
+		 if (closingX.left() == 0 && closingX.right() == seqX.length()+1) { //TODO: And or OR?
+			 scoreX =  log (probX);
+		 }
+		 else
+			 if ( probX != 0 && joint_probX != 0) {
+//			 std::cout << "=======A " <<  log (joint_probA/prob_closingA);
+			 scoreX =  log (joint_probX/prob_closingX);
+		 }
+		 else
+		 	 scoreX = cond_zero_penalty;
+
+		 if (closingX.left() == 0 && (closingX.right() == seqX.length()+1))
+		 {
+			 return (score_t)(params->struct_weight * (5+scoreX));
+		 }
+		 else
+		 {
+			 return (score_t)(params->struct_weight * (5+scoreX));
+		 }
+
+    }
     // Very basic interface
     score_t
     Scoring::arcDel(const Arc &arcX, bool isA, bool stacked) const { //TODO Important Scoring scheme for aligning an arc to a gap is not defined and implemented!
@@ -852,16 +881,26 @@ namespace LocARNA {
 	}
 
 	if (! params->mea_scoring) {
-	    return
+	if ( conditonal_scores ) { // Use conditional-prob scores
+		if (isA)
+			return arcDel_conditional(arcX, seqA, rna_dataA, ext_rna_dataA, closingA) +
+					loop_indel_score(gapX(arcX.left(), isA) + gapX(arcX.right(), isA));
+		else
+			return arcDel_conditional(arcX, seqB, rna_dataB, ext_rna_dataB, closingB) +
+					loop_indel_score(gapX(arcX.left(), isA) + gapX(arcX.right(), isA));
+	}
+	else{
+	return
 		// base pair weights
 		loop_indel_score(gapX(arcX.left(), isA) + gapX(arcX.right(), isA)) + //score of aligining base-pair ends wo gap, such that it is multiply by gamma_loop ratio
-	        (
-		 stacked
-		 ?
-		 (isA? stack_weightsA[arcX.idx()] : stack_weightsB[arcX.idx()])
-		 :
-		 (isA? weightsA[arcX.idx()] : weightsB[arcX.idx()])
-		 );
+		(
+		stacked
+		?
+		(isA? stack_weightsA[arcX.idx()] : stack_weightsB[arcX.idx()])
+		:
+		(isA? weightsA[arcX.idx()] : weightsB[arcX.idx()])
+		);
+	}
 	}
 	else
 	    {
