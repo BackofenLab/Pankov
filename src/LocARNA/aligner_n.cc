@@ -1268,7 +1268,7 @@ namespace LocARNA {
 
 		    }
 	}
-	std::cout << "WARNING: trace_IX No trace found!" << std::endl;
+	std::cerr << "WARNING: trace_IX No trace found!" << std::endl;
 
     }
     // AlignerN: traceback
@@ -1334,7 +1334,7 @@ namespace LocARNA {
 			return;
 		    }
 	    }
-	std::cout << "WARNING: trace_IXD No trace found!" << std::endl;
+	std::cerr << "WARNING: trace_IXD No trace found!" << std::endl;
 
 	return;
     }
@@ -1504,7 +1504,7 @@ namespace LocARNA {
 		alignment.append(i_seq_pos, -1);
 		return;
 	    }
-	    std::cout << "WARNING: trace_E No trace found!" << std::endl;
+	    std::cerr << "WARNING: trace_E No trace found!" << std::endl;
     }
 
     template <class ScoringView>
@@ -1540,7 +1540,7 @@ namespace LocARNA {
 		alignment.append(-1, j_seq_pos);
 		return;
 	    }
-	std::cout << "WARNING: trace_F No trace found!" << std::endl;
+	std::cerr << "WARNING: trace_F No trace found!" << std::endl;
     }
 
 
@@ -1805,7 +1805,7 @@ namespace LocARNA {
 		    }
 	    }
 
-	 std::cout << "WARNING: No trace found!" << std::endl;
+	 std::cerr << "WARNING: No trace found!" << std::endl;
     }
 
     // do the trace within one arc match.
