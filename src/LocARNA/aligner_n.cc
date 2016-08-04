@@ -516,7 +516,6 @@ namespace LocARNA {
     void
     AlignerN::fill_IA_entries( pos_type al, Arc arcB, pos_type max_ar )
     {
-    IADmat.fill(infty_score_t::neg_infty);
 
 	IAmat(0, arcB.idx()) = infty_score_t::neg_infty;
 	matidx_t max_right_index;
@@ -536,7 +535,7 @@ namespace LocARNA {
 	    //fill IAD matrix entries //tocheck: verify
 	    seq_pos_t i_seq_pos = mapperA.get_pos_in_seq_new(al, i_index);
 	    seq_pos_t i_prev_seq_pos = mapperA.get_pos_in_seq_new(al, i_index-1);
-	    if (bpsA.exists_arc(al,i_seq_pos))
+	    if (!params->track_closing_bp_  && bpsA.exists_arc(al,i_seq_pos)) //TODO: not sure if yet needed in non track_bp either
 		{
 		    const Arc& arcA = bpsA.arc(al, i_seq_pos);
 		    IADmat(arcA.idx(), arcB.idx()) = ((IAmat(i_index-1,arcB.idx()))) + getGapCostBetween(i_prev_seq_pos, i_seq_pos, true);
@@ -551,7 +550,6 @@ namespace LocARNA {
     {
 	if (trace_debugging_output)
 	    std::cout << "fill_IB_entries: " << "arcA=" << arcA<< ", bl=" << bl << "max_br=" << max_br << std::endl;
-	IBDmat.fill(infty_score_t::neg_infty);
 
 	IBmat(arcA.idx(), 0) = infty_score_t::neg_infty;
 
@@ -572,7 +570,7 @@ namespace LocARNA {
 	    //	std::cout << "j_seq_pos=" << j_seq_pos  << std::endl;
 	    seq_pos_t j_prev_seq_pos = mapperB.get_pos_in_seq_new(bl, j_index-1);
 	    //	std::cout <<" j_prev_seq_pos=" << j_prev_seq_pos << std::endl;
-	    if (bpsB.exists_arc(bl,j_seq_pos))
+	    if (!params->track_closing_bp_  && bpsB.exists_arc(bl,j_seq_pos))//TODO: not sure if yet needed in non track_bp either
 		{
 		    const Arc& arcB = bpsB.arc(bl,j_seq_pos);
 		    if (trace_debugging_output)
@@ -580,7 +578,8 @@ namespace LocARNA {
 
 		    IBDmat(arcA.idx(), arcB.idx()) = IBmat(arcA.idx(), j_index-1) + getGapCostBetween(j_prev_seq_pos, j_seq_pos, false);
 		    if (trace_debugging_output)
-		    	std::cout << "IBDmat(" << arcA.idx() << "," << arcB.idx()<<")=" << IBDmat(arcA.idx(), arcB.idx()) << std::endl;
+		    	std::cout << "IBDmat(" << arcA.idx() << "," << arcB.idx()<<")=" << IBDmat(arcA.idx(), arcB.idx()) <<":" <<
+		    	IBmat(arcA.idx(), j_index-1) << "+" << getGapCostBetween(j_prev_seq_pos, j_seq_pos, false) << std::endl;
 		}
 	}
 	//	std::cout << "fill_IB_entries arcA: " << arcA << " bl: "<< bl <<  " IBmat: " << std::endl << IBmat << std::endl;
@@ -750,11 +749,12 @@ namespace LocARNA {
 		   == infty_score_t::neg_infty || IADmat(arcA.idx(),arcB.idx()) == ia);
 		assert(IBDmat(arcA.idx(),arcB.idx())
 		   == infty_score_t::neg_infty || IBDmat(arcA.idx(), arcB.idx()) == ib);
-
 		IADmat(arcA.idx(),arcB.idx()) = ia; //TODO: avoid recomputation
 		IBDmat(arcA.idx(),arcB.idx()) = ib; //TODO: avoid recomputation
 		if (trace_debugging_output) {
-		std::cout << "m=" << m << " ia=" << ia << " ib=" << IBmat(arcA.idx(),br_prev_mat_idx_pos) <<"+" << jumpGapCostB << "=" << ib << std::endl;
+			std::cout << "Set IAD(" << arcA.idx() <<","<< arcB.idx()<<") =" << ia <<std::endl;
+			std::cout << "Set IBD(" << arcA.idx() <<","<< arcB.idx()<<") =" << ib <<std::endl;
+			std::cout << "m=" << m << " ia=" << ia << " ib=" << IBmat(arcA.idx(),br_prev_mat_idx_pos) <<"+" << jumpGapCostB << "=" << ib << std::endl;
 		}
 
 		//	assert(ia == iad);
@@ -937,7 +937,7 @@ namespace LocARNA {
 			if (trace_debugging_output)	std::cout << "empty left_adjlist(bl=)" << bl << std::endl;
 			continue;
 		    }
-
+//		std::cout << "*** al: " << al << "    bl:" << bl << std::endl;
 		// ------------------------------------------------------------
 		// old code for finding maximum arc ends:
 
@@ -1014,6 +1014,7 @@ namespace LocARNA {
 						adjlB.begin(); arcB != adjlB.end(); ++arcB) {
 					scoring->set_closing_arcs(*arcA, *arcB);
 					if (trace_debugging_output) {
+						std::cout << "align_D arcA:" << *arcA << ", arcB:" << *arcB << std::endl;
 						std::cout << "fill_M_entries: " << al << "," << arcA->right() << "  " <<  bl << "," << arcB->right() << std::endl;
 						std::cout << "                 arcA:" <<  *arcA << "  arcB" << *arcB << std::endl;
 					}
@@ -1336,7 +1337,7 @@ namespace LocARNA {
 		sv.scoring()->set_closing_arcs(traceback_closing_arcA, traceback_closing_arcB);
 		fill_IB_entries(arcA, bl, br_seq_pos);
 		if (trace_debugging_output)
-//		    std::cout << "IXD(" << arcA.idx() << "," << arcB.idx() << ")="  << IBDmat(arcA.idx(), arcB.idx()) << " ?== " << IB(arcA, br_prev_mat_idx_pos ) << "+" << jumpGapCostB << std::endl;
+		    std::cout << "IXD(" << arcA.idx() << "," << arcB.idx() << ")="  << IBDmat(arcA.idx(), arcB.idx()) << " ?== " << IB(arcA, br_prev_mat_idx_pos ) << "+" << jumpGapCostB << std::endl;
 
 		if (IBDmat(arcA.idx(), arcB.idx())  ==  IB(arcA, br_prev_mat_idx_pos ) + jumpGapCostB )
 		    {
