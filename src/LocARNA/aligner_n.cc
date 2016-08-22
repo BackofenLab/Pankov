@@ -17,8 +17,6 @@
 
 namespace LocARNA {
 
-    bool trace_debugging_output=false; //!< a static switch to enable generating debugging logs
-    bool do_cond_bottom_up=false;
 
     // ------------------------------------------------------------
     // AlignerN: align / compute similarity
@@ -105,6 +103,9 @@ namespace LocARNA {
 
 	gapCostAmat.resize(seqA.length()+3, seqA.length()+3);
 	gapCostBmat.resize(seqB.length()+3, seqB.length()+3);
+
+	trace_debugging_output=false; //!< a static switch to enable generating debugging logs
+	do_cond_bottom_up=false;
 
 
     }
