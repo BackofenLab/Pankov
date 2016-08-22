@@ -26,7 +26,8 @@ libLocARNA_@API_VERSION@_la_SOURCES=LocARNA/aux.cc			\
 	LocARNA/rna_structure.cc LocARNA/confusion_matrix.cc		\
 	LocARNA/global_stopwatch.cc LocARNA/mcc_matrices.cc		\
 	LocARNA/aligner_n.cc LocARNA/sparsification_mapper.cc		\
-	LocARNA/exact_matcher.cc LocARNA/params.cc
+	LocARNA/exact_matcher.cc LocARNA/params.cc                      \
+        LocARNA/aligner_nn.hh
 
 libLocARNA_@API_VERSION@_la_LDFLAGS = -version-info $(SO_VERSION)
 
@@ -59,7 +60,7 @@ nobase_library_include_HEADERS = LocARNA/aux.hh LocARNA/plusvector.hh	\
 	LocARNA/type_wrapper.hh LocARNA/global_stopwatch.hh		\
 	LocARNA/tuples.hh LocARNA/mcc_matrices.hh			\
 	LocARNA/aligner_n.hh LocARNA/sparsification_mapper.hh		\
-	LocARNA/exact_matcher.hh
+	LocARNA/exact_matcher.hh LocARNA/aligner_nn.hh
 
 ## binary programs
 ##
@@ -67,7 +68,7 @@ nobase_library_include_HEADERS = LocARNA/aux.hh LocARNA/plusvector.hh	\
 ##
 bin_PROGRAMS = locarna.bin ribosum2cc locarna_p locarnap_fit	\
                locarna_deviation locarna_rnafold_pp ribosum2cc	\
-               exparna_p sparse
+               exparna_p sparse sparse_n
 
 if STATIC_LIBLOCARNA
 ## link libLocARNA statically to the binaries
@@ -79,6 +80,7 @@ locarna_p_LDFLAGS=-static
 locarna_rnafold_pp_LDFLAGS=-static
 ribosum2cc_LDFLAGS=-static
 sparse_LDFLAGS=-static
+sparse_n_LDFLAGS=-static
 endif
 
 #remove the extension .bin for installation
@@ -116,6 +118,8 @@ locarna_p_SOURCES = locarna_p.cc
 exparna_p_SOURCES = exparna_p.cc 
 
 sparse_SOURCES = sparse.cc
+
+sparse_n_SOURCES = sparse_n.cc
 
 ribosum2cc_SOURCES = ribosum2cc.cc
 

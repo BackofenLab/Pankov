@@ -1,7 +1,7 @@
 #include "aux.hh"
 #include "global_stopwatch.hh"
 
-#include "aligner_n.hh"
+#include "aligner_nn.hh"
 #include "anchor_constraints.hh"
 #include "trace_controller.hh"
 // #include "d_matrix.hh"
@@ -21,10 +21,10 @@ namespace LocARNA {
     bool do_cond_bottom_up=false;
 
     // ------------------------------------------------------------
-    // AlignerN: align / compute similarity
+    // AlignerNN: align / compute similarity
     //
 //TODO: initilizeze innner most attributes or remove them
-    AlignerN::AlignerN(const AlignerN &a)
+    AlignerNN::AlignerNN(const AlignerNN &a)
 	: params(new AlignerNParams(*a.params)),
 	  scoring(a.scoring),
 	  mod_scoring(0),
@@ -60,8 +60,8 @@ namespace LocARNA {
 	traceback_closing_arcB(a.traceback_closing_arcB)
     {}
 
-    AlignerN::AlignerN(const AlignerParams &ap_ )
-	: params(new AlignerNParams(dynamic_cast<const AlignerNParams &>(ap_))),
+    AlignerNN::AlignerNN(const AlignerParams &ap_ )
+	: params(new AlignerNParams(dynamic_cast<const AlignerNParams &>(ap_))), //TODO: Check if needed to switch to AlignerNNParams?
 	  scoring(params->scoring_),
 	  mod_scoring(0),
 	  seqA(*params->seqA_), seqB(*params->seqB_),
@@ -111,7 +111,7 @@ namespace LocARNA {
 
 
     //destructor
-    AlignerN::~AlignerN() {
+    AlignerNN::~AlignerNN() {
         assert(params != 0);
         delete params;
 	if (mod_scoring!=0) delete mod_scoring;
@@ -120,7 +120,7 @@ namespace LocARNA {
     // Computes and stores score of aligning a the subsequence between
     // different possible leftSides & rightSides to the gap
     template <class ScoringView>
-    void AlignerN::computeGapCosts(bool isA, ScoringView sv)
+    void AlignerNN::computeGapCosts(bool isA, ScoringView sv)
     {
 	if (trace_debugging_output) {
 	    std::cout << "computeGapCosts " << (isA?'A':'B') << std::endl;
@@ -157,7 +157,7 @@ namespace LocARNA {
     // Returns score of aligning a the subsequence between leftSide &
     // rightSide to the gap, not including right/left side
     inline
-    infty_score_t AlignerN::getGapCostBetween( pos_type leftSide, pos_type rightSide, bool isA)
+    infty_score_t AlignerNN::getGapCostBetween( pos_type leftSide, pos_type rightSide, bool isA)
     //todo: Precompute the matrix?!
     {
 	//    if (trace_debugging_output) std::cout <<
@@ -172,7 +172,7 @@ namespace LocARNA {
     // Compute an element of the matrix IA/IB
     template<class ScoringView>
     infty_score_t
-    AlignerN::compute_IX(index_t xl, const Arc& arcY, 
+    AlignerNN::compute_IX(index_t xl, const Arc& arcY,
 			 matidx_t i_index, bool isA, ScoringView sv) {
 
 	//constraints are ignored,
@@ -240,7 +240,7 @@ namespace LocARNA {
     //Compute an entry of matrix E
     template<class ScoringView>
     infty_score_t
-    AlignerN::compute_E_entry(index_t al, matidx_t i_index, matidx_t j_index, seq_pos_t i_seq_pos, seq_pos_t i_prev_seq_pos, ScoringView sv)
+    AlignerNN::compute_E_entry(index_t al, matidx_t i_index, matidx_t j_index, seq_pos_t i_seq_pos, seq_pos_t i_prev_seq_pos, ScoringView sv)
     {
 	bool constraints_aligned_pos_A = false; // TOcheck: Probably unnecessary, constraints are not considered
 	if (i_seq_pos <= al || constraints_aligned_pos_A) //check possibility of base deletion
@@ -259,7 +259,7 @@ namespace LocARNA {
     //Compute an entry of matrix F
     template<class ScoringView>
     infty_score_t
-    AlignerN::compute_F_entry(index_t bl, 
+    AlignerNN::compute_F_entry(index_t bl,
 			      matidx_t i_index, matidx_t j_index,
 			      seq_pos_t j_seq_pos, seq_pos_t j_prev_seq_pos, ScoringView sv)
     {
@@ -280,7 +280,7 @@ namespace LocARNA {
     //Compute an entry of matrix M
     template<class ScoringView>
     infty_score_t
-    AlignerN::compute_M_entry(index_t al, index_t bl,
+    AlignerNN::compute_M_entry(index_t al, index_t bl,
 			      matidx_t i_index, matidx_t j_index, ScoringView sv) {
 
 	bool constraints_alowed_edge = true;
@@ -448,7 +448,7 @@ namespace LocARNA {
     //
     template <class ScoringView>
     void
-    AlignerN::init_M_E_F(pos_type al, pos_type ar, pos_type bl, pos_type br, ScoringView sv) {
+    AlignerNN::init_M_E_F(pos_type al, pos_type ar, pos_type bl, pos_type br, ScoringView sv) {
 
 	// alignments that have empty subsequence in A (i=al) and
 	// end with gap in alistr of B do not exist ==> -infty
@@ -519,7 +519,7 @@ namespace LocARNA {
 
     //fill IA entries for a column with fixed al, arcB
     void
-    AlignerN::fill_IA_entries( pos_type al, Arc arcB, pos_type max_ar )
+    AlignerNN::fill_IA_entries( pos_type al, Arc arcB, pos_type max_ar )
     {
 
 	IAmat(0, arcB.idx()) = infty_score_t::neg_infty;
@@ -551,7 +551,7 @@ namespace LocARNA {
     }
 
     //fill IB entries for a row with fixed arcA, bl
-    void AlignerN::fill_IB_entries ( Arc arcA, pos_type bl, pos_type max_br)
+    void AlignerNN::fill_IB_entries ( Arc arcA, pos_type bl, pos_type max_br)
     {
 	if (trace_debugging_output)
 	    std::cout << "fill_IB_entries: " << "arcA=" << arcA<< ", bl=" << bl << "max_br=" << max_br << std::endl;
@@ -592,7 +592,7 @@ namespace LocARNA {
 
     //compute/align matrix M
     void
-    AlignerN::fill_M_entries(pos_type al, pos_type ar,
+    AlignerNN::fill_M_entries(pos_type al, pos_type ar,
 			     pos_type bl, pos_type br) {
 	
 	assert(br>0); //todo: adding appropriate assertions
@@ -668,7 +668,7 @@ namespace LocARNA {
     }
 
     void
-    AlignerN::fill_D_entry(const Arc &arcA,const Arc &arcB){
+    AlignerNN::fill_D_entry(const Arc &arcA,const Arc &arcB){
 
     	index_t al = arcA.left();
     	index_t bl = arcB.left();
@@ -782,7 +782,7 @@ namespace LocARNA {
     // for the subproblem al,bl,max_ar,max_br
     // pre: M,IA,IB matrices are computed by a call to
     void
-    AlignerN::fill_D_entries(pos_type al, pos_type bl) {
+    AlignerNN::fill_D_entries(pos_type al, pos_type bl) {
 	assert(!params->no_lonely_pairs_); // take special care of noLP in this method
 
 	if (trace_debugging_output) {
@@ -909,7 +909,7 @@ namespace LocARNA {
 
     // compute all entries D
     void
-    AlignerN::align_D() {
+    AlignerNN::align_D() {
 	computeGapCosts(true, def_scoring_view);//gap costs A //tocheck:always def_score view!
 	computeGapCosts(false, def_scoring_view);//gap costs B //tocheck:always def_score view!
 
@@ -1085,7 +1085,7 @@ namespace LocARNA {
 
     // compute the alignment score
     infty_score_t
-    AlignerN::align() {
+    AlignerNN::align() {
 	// ------------------------------------------------------------
 	// computes D matrix (if not already done) and then does the alignment on the top level
 	// ------------------------------------------------------------
@@ -1154,7 +1154,7 @@ namespace LocARNA {
     // ------------------------------------------------------------
 
     template <class ScoringView>
-    void AlignerN::trace_IX(pos_type xl, matidx_t i_index,
+    void AlignerNN::trace_IX(pos_type xl, matidx_t i_index,
 			     const Arc &arcY, bool isA, ScoringView sv)
     {
 	const BasePairs &bpsX = isA? bpsA : bpsB;
@@ -1289,9 +1289,9 @@ namespace LocARNA {
 	std::cerr << "WARNING: trace_IX No trace found!" << std::endl;
 
     }
-    // AlignerN: traceback
+    // AlignerNN: traceback
     template<class ScoringView>
-    void AlignerN::trace_IXD(const Arc &arcA, const Arc &arcB,bool isA, ScoringView sv) {
+    void AlignerNN::trace_IXD(const Arc &arcA, const Arc &arcB,bool isA, ScoringView sv) {
 
 	if (trace_debugging_output) std::cout << "****trace_IXD****" << (isA?"A ":"B ") << arcA << " " << arcB  << std::endl;
 	assert(! params->struct_local_);
@@ -1360,9 +1360,9 @@ namespace LocARNA {
     }
 
 
-    // AlignerN: traceback
+    // AlignerNN: traceback
     template<class ScoringView>
-    void AlignerN::trace_D(const Arc &arcA, const Arc &arcB, ScoringView sv) {
+    void AlignerNN::trace_D(const Arc &arcA, const Arc &arcB, ScoringView sv) {
 	
 	assert(!params->no_lonely_pairs_); //take special care of noLP in this method
 
@@ -1487,7 +1487,7 @@ namespace LocARNA {
 
     // looks like we don't use this
     // template<class ScoringView>
-    // void AlignerN::trace_D(const ArcMatch &am, ScoringView sv) {
+    // void AlignerNN::trace_D(const ArcMatch &am, ScoringView sv) {
 
     // 	trace_D(am.arcA(), am.arcB(), sv);
     // }
@@ -1495,7 +1495,7 @@ namespace LocARNA {
     // do the trace for base deletion within one arc match.
     // only the cases without exclusions are considered
     template <class ScoringView>
-    void AlignerN::trace_E(pos_type al, matidx_t i_index, pos_type bl, matidx_t j_index, bool top_level, ScoringView sv)
+    void AlignerNN::trace_E(pos_type al, matidx_t i_index, pos_type bl, matidx_t j_index, bool top_level, ScoringView sv)
     {
 	seq_pos_t i_seq_pos = mapperA.get_pos_in_seq_new(al, i_index);
 	if (trace_debugging_output) std::cout << "******trace_E***** " << " al:" << al << " bl:"<< bl << " i:" << i_seq_pos << " :: " <<  Emat(i_index,j_index) << std::endl;
@@ -1531,7 +1531,7 @@ namespace LocARNA {
     }
 
     template <class ScoringView>
-    void AlignerN::trace_F(pos_type al, matidx_t i_index, pos_type bl, matidx_t j_index, bool top_level, ScoringView sv)
+    void AlignerNN::trace_F(pos_type al, matidx_t i_index, pos_type bl, matidx_t j_index, bool top_level, ScoringView sv)
     {
 
 	seq_pos_t j_seq_pos = mapperB.get_pos_in_seq_new(bl, j_index);
@@ -1569,7 +1569,7 @@ namespace LocARNA {
 
     // trace and handle all cases that do not involve exclusions
     template<class ScoringView>
-    void AlignerN::trace_M_noex(pos_type al, matidx_t i_index, pos_type bl, matidx_t j_index, bool top_level, ScoringView sv)
+    void AlignerNN::trace_M_noex(pos_type al, matidx_t i_index, pos_type bl, matidx_t j_index, bool top_level, ScoringView sv)
     {
 
 	seq_pos_t i_seq_pos = mapperA.get_pos_in_seq_new(al, i_index);
@@ -1835,7 +1835,7 @@ namespace LocARNA {
     // the cases without exclusions are delegated to trace_noex
     template <class ScoringView>
     void
-    AlignerN::trace_M(pos_type al, matidx_t i_index, pos_type bl, matidx_t j_index, bool top_level, ScoringView sv) {
+    AlignerNN::trace_M(pos_type al, matidx_t i_index, pos_type bl, matidx_t j_index, bool top_level, ScoringView sv) {
 	//pre: M matrices for arc computed
 	assert(! params->sequ_local_); //Local seq alignment not implemented yet.
 
@@ -1871,7 +1871,7 @@ namespace LocARNA {
 
     template<class ScoringView>
     void
-    AlignerN::trace(ScoringView sv) {
+    AlignerNN::trace(ScoringView sv) {
 	// pre: last call align_in_arcmatch(r.startA()-1,r.endA()+1,r.startB()-1,r.endB()+1);
 	//      or align_top_level_locally for sequ_local alignent
 
@@ -1905,7 +1905,7 @@ namespace LocARNA {
     }
 
     void
-    AlignerN::trace() {
+    AlignerNN::trace() {
 	stopwatch.start("trace");
 
 	trace(def_scoring_view);

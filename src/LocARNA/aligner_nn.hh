@@ -1,5 +1,5 @@
-#ifndef LOCARNA_ALIGNER_N_HH
-#define LOCARNA_ALIGNER_N_HH
+#ifndef LOCARNA_ALIGNER_NN_HH
+#define LOCARNA_ALIGNER_NN_HH
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -32,7 +32,7 @@ namespace LocARNA {
 
      * usage: construct, align, trace, get_alignment
      */
-    class AlignerN {
+    class AlignerNN {
     public:
 	typedef BasePairs__Arc Arc;	//!< type for an arc a.k.a base pair
 	typedef SparsificationMapper::ArcIdx ArcIdx; //!< type for arc index
@@ -129,7 +129,7 @@ namespace LocARNA {
 	 */
 	class UnmodifiedScoringViewN {
 	protected:
-	    const AlignerN *alignerN_; //!< aligner object for that the view is provided
+	    const AlignerNN *alignerNN_; //!< aligner object for that the view is provided
 	public:
 
 	    /**
@@ -138,7 +138,7 @@ namespace LocARNA {
 	     * @param alignerN The aligner object
 	     */
 	    explicit
-            UnmodifiedScoringViewN(const AlignerN *alignerN): alignerN_(alignerN) {};
+            UnmodifiedScoringViewN(const AlignerNN *alignerNN): alignerNN_(alignerNN) {};
 
 	    /**
 	     * Get scoring object
@@ -146,7 +146,7 @@ namespace LocARNA {
 	     * @return (unmodified) scoring object of aligner
 	     */
 	    // TODO: const
-            Scoring *scoring() const {return alignerN_->scoring;}
+            Scoring *scoring() const {return alignerNN_->scoring;}
 
 	    /**
 	     * View on matrix D
@@ -157,7 +157,7 @@ namespace LocARNA {
 	     * @return D matrix entry for match of a and b
 	     */
 	    infty_score_t D(const Arc &a, const Arc &b) const {
-		return alignerN_->Dmat(a.idx(),b.idx());
+		return alignerNN_->Dmat(a.idx(),b.idx());
 	    }
 
 
@@ -199,7 +199,7 @@ namespace LocARNA {
 	//TODO: required? ModifiedScoringView
 	class ModifiedScoringViewN {
 	protected:
-	    const AlignerN *alignerN_; //!< aligner object for that the view is provided
+	    const AlignerNN *alignerNN_; //!< aligner object for that the view is provided
 
 	    score_t lambda_; //!< factor for modifying scoring
 
@@ -224,8 +224,8 @@ namespace LocARNA {
 	     * @note scoring object in aligner has to be modified by lambda already
 	     */
 	    explicit
-            ModifiedScoringViewN(const AlignerN *alignerN)
-		: alignerN_(alignerN),lambda_(0) {}
+            ModifiedScoringViewN(const AlignerNN *alignerNN)
+		: alignerNN_(alignerNN),lambda_(0) {}
 
 	    /**
 	     * Change modification factor lambda
@@ -242,7 +242,7 @@ namespace LocARNA {
 	     *
 	     * @return modified scoring object of aligner
 	     */
-	    const Scoring *scoring() const {return alignerN_->mod_scoring;}
+	    const Scoring *scoring() const {return alignerNN_->mod_scoring;}
 
 	    /**
 	     * View on matrix D
@@ -253,7 +253,7 @@ namespace LocARNA {
 	     * @return modified D matrix entry for match of a and b
 	     */
 	    infty_score_t D(const Arc &a,const Arc &b) const {
-		return alignerN_->Dmat(a.idx(),b.idx())
+		return alignerNN_->Dmat(a.idx(),b.idx())
 		    -lambda_*(arc_length(a)+arc_length(b));
 	    }
 
@@ -266,7 +266,7 @@ namespace LocARNA {
 	     * @return modified D matrix entry for arc match am
 	     */
 	    infty_score_t D(const ArcMatch &am) const {
-		return alignerN_->Dmat(am.arcA().idx(),am.arcB().idx())
+		return alignerNN_->Dmat(am.arcA().idx(),am.arcB().idx())
 		    -lambda_*(arc_length(am.arcA())+arc_length(am.arcB()));
 	    }
 	};
@@ -631,7 +631,7 @@ namespace LocARNA {
 
     public:
 	//! copy constructor
-	AlignerN(const AlignerN &a);
+	AlignerNN(const AlignerNN &a);
 
 	/** 
 	 * @brief Construct from parameters
@@ -639,8 +639,7 @@ namespace LocARNA {
          * @note ap is copied to allow reference to a temporary
          * @note for implicit type cast
          */
-	AlignerN(const AlignerParams &ap);
-    
+	AlignerNN(const AlignerParams &ap);
 	/**
 	 * @brief create with named parameters
 	 * @return parameter object
@@ -649,7 +648,7 @@ namespace LocARNA {
 	AlignerNParams create() {return AlignerNParams();} 
 
 	//! destructor
-	~AlignerN();
+	~AlignerNN();
 
 	//! return the alignment that was computed by trace()
 	Alignment const & 
@@ -667,4 +666,4 @@ namespace LocARNA {
 
 } //end namespace LocARNA
 
-#endif // LOCARNA_ALIGNER_N_HH
+#endif // LOCARNA_ALIGNER_NN_HH
