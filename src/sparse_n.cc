@@ -16,7 +16,7 @@
 #include "LocARNA/sequence.hh"
 #include "LocARNA/basepairs.hh"
 #include "LocARNA/alignment.hh"
-#include "LocARNA/aligner_n.hh"
+#include "LocARNA/aligner_nn.hh"
 #include "LocARNA/rna_data.hh"
 #include "LocARNA/arc_matches.hh"
 #include "LocARNA/match_probs.hh"
@@ -701,8 +701,8 @@ main(int argc, char **argv) {
     }
 
     // construct sparsification mapper for seqs A,B
-    SparsificationMapper mapperA(bpsA, *rna_dataA, clp.prob_unpaired_in_loop_threshold, clp.prob_basepair_in_loop_threshold, true);
-    SparsificationMapper mapperB(bpsB, *rna_dataB, clp.prob_unpaired_in_loop_threshold, clp.prob_basepair_in_loop_threshold, true);
+//    SparsificationMapper mapperA(bpsA, *rna_dataA, clp.prob_unpaired_in_loop_threshold, clp.prob_basepair_in_loop_threshold, true);
+//    SparsificationMapper mapperB(bpsB, *rna_dataB, clp.prob_unpaired_in_loop_threshold, clp.prob_basepair_in_loop_threshold, true);
 
 	//TODO: It is inefficient to create mapper_arcsX, if track closing pair is not enabled
     //construct mappers where right_sdj list is indexed by arcIndex
@@ -845,9 +845,7 @@ main(int argc, char **argv) {
     //
 
     // initialize aligner object, which does the alignment computation
-    AlignerN aligner = AlignerN::create()
-	. sparsification_mapperA(mapperA)
-	. sparsification_mapperB(mapperB)
+    AlignerNN aligner = AlignerNN::create()
 	. sparsification_mapper_arcsA(mapper_arcsA)
 	. sparsification_mapper_arcsB(mapper_arcsB)
 	. seqA(seqA)
