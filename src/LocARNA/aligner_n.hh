@@ -59,6 +59,9 @@ namespace LocARNA {
 
 	const SparsificationMapper& mapperA; //!< sparsification mapping for seq A
 	const SparsificationMapper& mapperB; //!< sparsification mapping for seq B
+	const SparsificationMapper& mapper_arcsA; //!< sparsification mapping for seq A indexed by arcs
+	const SparsificationMapper& mapper_arcsB; //!< sparsification mapping for seq B indexed by arcs
+
 
 	const ArcMatches &arc_matches; //!< the potential arc matches between A and B
 

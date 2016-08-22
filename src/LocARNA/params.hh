@@ -336,6 +336,8 @@ namespace LocARNA {
     protected:
 	const SparsificationMapper *sparsification_mapperA_; //!<sparsification mapper A
 	const SparsificationMapper *sparsification_mapperB_; //!<sparsification mapper B
+	const SparsificationMapper *sparsification_mapper_arcsA_; //!<sparsification mapper A indexed by arcs
+	const SparsificationMapper *sparsification_mapper_arcsB_; //!<sparsification mapper B indexed by arcs
 
     	/** 
 	 * Construct with default parameters
@@ -343,7 +345,10 @@ namespace LocARNA {
 	AlignerNParams():
 	    AlignerParams(),
             sparsification_mapperA_(0L),
-            sparsification_mapperB_(0L)
+            sparsification_mapperB_(0L),
+    		sparsification_mapper_arcsA_(0L),
+    		sparsification_mapper_arcsB_(0L)
+
 	{}
 
     public:
@@ -356,6 +361,14 @@ namespace LocARNA {
 	    sparsification_mapperA_=&sparsification_mapperA; return *this;}
 
 	/**
+	 * @brief set parameter sparsification mapper indexed by arcs
+	 * @param sparsification_mapperA scaling sparisification mapper for A
+	 */
+	AlignerNParams &
+	sparsification_mapper_arcsA(const SparsificationMapper &sparsification_mapper_arcsA) {
+		sparsification_mapper_arcsA_=&sparsification_mapper_arcsA; return *this;}
+
+	/**
 	 * @brief set parameter sparsification mapper
 	 * @param sparsification_mapperB scaling sparisification mapper for A
 	 */
@@ -363,9 +376,18 @@ namespace LocARNA {
 	sparsification_mapperB(const SparsificationMapper &sparsification_mapperB) {
 	    sparsification_mapperB_=&sparsification_mapperB; return *this;}
 
+    /**
+	 * @brief set parameter sparsification mapper indexed by arcs
+	 * @param sparsification_mapperB scaling sparisification mapper for A
+	 */
+	AlignerNParams &
+	sparsification_mapper_arcsB(const SparsificationMapper &sparsification_mapper_arcsB) {
+		sparsification_mapper_arcsB_=&sparsification_mapper_arcsB; return *this;}
+
 	~AlignerNParams() {}
     };
-    
+
+
 
 }
 

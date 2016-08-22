@@ -23,7 +23,7 @@ namespace LocARNA {
     // ------------------------------------------------------------
     // AlignerN: align / compute similarity
     //
-
+//TODO: initilizeze innner most attributes or remove them
     AlignerN::AlignerN(const AlignerN &a)
 	: params(new AlignerNParams(*a.params)),
 	  scoring(a.scoring),
@@ -32,6 +32,8 @@ namespace LocARNA {
 	  seqB(a.seqB),
 	  mapperA(a.mapperA),
 	  mapperB(a.mapperB),
+	  mapper_arcsA(a.mapper_arcsA),
+	  mapper_arcsB(a.mapper_arcsB),
 	  arc_matches(a.arc_matches),
 	  bpsA(a.bpsA),
 	  bpsB(a.bpsB),
@@ -65,6 +67,9 @@ namespace LocARNA {
 	  seqA(*params->seqA_), seqB(*params->seqB_),
 	  mapperA(*params->sparsification_mapperA_),
 	  mapperB(*params->sparsification_mapperB_),
+	  mapper_arcsA(*params->sparsification_mapper_arcsA_),
+	  mapper_arcsB(*params->sparsification_mapper_arcsB_),
+
 	  arc_matches(*params->arc_matches_),
 	  bpsA(params->arc_matches_->get_base_pairsA()),
 	  bpsB(params->arc_matches_->get_base_pairsB()),
@@ -989,7 +994,7 @@ namespace LocARNA {
 				}
 			//	    stopwatch.stop("compIA");
 
-			//comput IB
+			//compute IB
 			//	    stopwatch.start("compIB");
 			for (BasePairs::LeftAdjList::const_iterator arcA = adjlA.begin();
 				 arcA != adjlA.end(); ++arcA)
@@ -997,7 +1002,6 @@ namespace LocARNA {
 				fill_IB_entries(*arcA, bl, max_br );
 				}
 			//	    stopwatch.stop("compIB");
-
 
 			// ------------------------------------------------------------
 			// now fill matrix D entries

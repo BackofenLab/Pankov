@@ -704,6 +704,12 @@ main(int argc, char **argv) {
     SparsificationMapper mapperA(bpsA, *rna_dataA, clp.prob_unpaired_in_loop_threshold, clp.prob_basepair_in_loop_threshold, true);
     SparsificationMapper mapperB(bpsB, *rna_dataB, clp.prob_unpaired_in_loop_threshold, clp.prob_basepair_in_loop_threshold, true);
 
+	//TODO: It is inefficient to create mapper_arcsX, if track closing pair is not enabled
+    //construct mappers where right_sdj list is indexed by arcIndex
+	SparsificationMapper mapper_arcsA(bpsA, *rna_dataA, clp.prob_unpaired_in_loop_threshold, clp.prob_basepair_in_loop_threshold, false);
+	SparsificationMapper mapper_arcsB(bpsB, *rna_dataB, clp.prob_unpaired_in_loop_threshold, clp.prob_basepair_in_loop_threshold, false);
+
+
     // ------------------------------------------------------------
     // Sequence match probabilities (for MEA-Alignment)
     //
@@ -842,6 +848,8 @@ main(int argc, char **argv) {
     AlignerN aligner = AlignerN::create()
 	. sparsification_mapperA(mapperA)
 	. sparsification_mapperB(mapperB)
+	. sparsification_mapper_arcsA(mapper_arcsA)
+	. sparsification_mapper_arcsB(mapper_arcsB)
 	. seqA(seqA)
 	. seqB(seqB)
 	. arc_matches(*arc_matches)
