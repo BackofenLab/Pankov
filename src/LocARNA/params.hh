@@ -332,6 +332,7 @@ namespace LocARNA {
      */
     class AlignerNParams: public AlignerParams {  
 	friend class AlignerN;
+	friend class AlignerNN;
 
     protected:
 	const SparsificationMapper *sparsification_mapperA_; //!<sparsification mapper A
