@@ -47,6 +47,8 @@ namespace LocARNA {
 	typedef ScoreMatrix M_matrix_t;
 
     private:
+    bool trace_debugging_output; //!< a static switch to enable generating debugging logs
+    bool do_cond_bottom_up;
 
     protected:
 	const AlignerNParams *params; //!< the parameter for the alignment
