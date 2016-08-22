@@ -48,6 +48,9 @@ namespace LocARNA {
 
     private:
 
+    bool trace_debugging_output; //!< a static switch to enable generating debugging logs
+    bool do_cond_bottom_up;
+
     protected:
 	const AlignerNParams *params; //!< the parameter for the alignment
 
@@ -57,8 +60,6 @@ namespace LocARNA {
 	const Sequence &seqA; //!< sequence A
 	const Sequence &seqB; //!< sequence B
 
-	const SparsificationMapper& mapperA; //!< sparsification mapping for seq A
-	const SparsificationMapper& mapperB; //!< sparsification mapping for seq B
 	const SparsificationMapper& mapper_arcsA; //!< sparsification mapping for seq A indexed by arcs
 	const SparsificationMapper& mapper_arcsB; //!< sparsification mapping for seq B indexed by arcs
 
@@ -127,7 +128,7 @@ namespace LocARNA {
 	 * penalty for the standard case the mechanism is used for methods
 	 * compute_M_entry and trace_noex
 	 */
-	class UnmodifiedScoringViewN {
+	class UnmodifiedScoringViewNN {
 	protected:
 	    const AlignerNN *alignerNN_; //!< aligner object for that the view is provided
 	public:
@@ -138,7 +139,7 @@ namespace LocARNA {
 	     * @param alignerN The aligner object
 	     */
 	    explicit
-            UnmodifiedScoringViewN(const AlignerNN *alignerNN): alignerNN_(alignerNN) {};
+            UnmodifiedScoringViewNN(const AlignerNN *alignerNN): alignerNN_(alignerNN) {};
 
 	    /**
 	     * Get scoring object
@@ -197,7 +198,7 @@ namespace LocARNA {
 	 * @see UnmodifiedScoringView
 	 */
 	//TODO: required? ModifiedScoringView
-	class ModifiedScoringViewN {
+	class ModifiedScoringViewNN {
 	protected:
 	    const AlignerNN *alignerNN_; //!< aligner object for that the view is provided
 
@@ -224,7 +225,7 @@ namespace LocARNA {
 	     * @note scoring object in aligner has to be modified by lambda already
 	     */
 	    explicit
-            ModifiedScoringViewN(const AlignerNN *alignerNN)
+            ModifiedScoringViewNN(const AlignerNN *alignerNN)
 		: alignerNN_(alignerNN),lambda_(0) {}
 
 	    /**
@@ -273,8 +274,8 @@ namespace LocARNA {
 
 
 	// TODO: const
-	UnmodifiedScoringViewN def_scoring_view; //!< Default scoring view
-	ModifiedScoringViewN mod_scoring_view; //!< Modified scoring view for normalized alignment
+	UnmodifiedScoringViewNN def_scoring_view; //!< Default scoring view
+	ModifiedScoringViewNN mod_scoring_view; //!< Modified scoring view for normalized alignment
 
 	Arc traceback_closing_arcA;
 	Arc traceback_closing_arcB;
@@ -299,7 +300,8 @@ namespace LocARNA {
 	 * 
 	 */
 	template <class ScoringView>
-	void init_M_E_F(pos_type al, pos_type ar, pos_type bl, pos_type br,ScoringView sv);
+	void init_M_E_F(ArcIdx idxA, ArcIdx idxB,ScoringView sv);
+
 
 	/**
 	 * \brief compute and stores score of aligning subsequences to the gap
@@ -334,7 +336,7 @@ namespace LocARNA {
 	 * 
 	 */
 	template<class ScoringView>
-	infty_score_t compute_IX(pos_type xl, const Arc& arcY, pos_type i,bool isA, ScoringView sv);
+	infty_score_t compute_IX(ArcIdx idxX, const Arc& arcY, pos_type i,bool isA, ScoringView sv);
 
 	/**
 	 * \brief fills all IA values using default scoring scheme
@@ -344,7 +346,7 @@ namespace LocARNA {
 	 * @param max_ar rightmost possible for an arc starting with the left end al in sequence A: maximum right end of current arc match
 	 *
 	 */
-	void fill_IA_entries ( pos_type al, Arc arcB, pos_type max_ar);
+	void fill_IA_entries ( ArcIdx idxA, Arc arcB, pos_type max_ar);
 
 	/**
 	 * \brief fills all IB values using default scoring scheme
@@ -354,7 +356,7 @@ namespace LocARNA {
 	 * @param max_br rightmost possible for an arc with the left end of bl in sequence B: maximum right end of current arc match
 	 *
 	 */
-	void fill_IB_entries ( Arc arcA, pos_type bl, pos_type max_br);
+	void fill_IB_entries ( Arc arcA, ArcIdx idxB, pos_type max_br);
 
 	/**
 	* \brief compute E matrix value of single matrix element
@@ -368,7 +370,7 @@ namespace LocARNA {
 	* @returns score of E(i,j)
 	*/
 		template<class ScoringView>
-	infty_score_t compute_E_entry(index_t al, matidx_t i_index, matidx_t j_index, seq_pos_t i_seq_pos, seq_pos_t i_prev_seq_pos, ScoringView sv);
+	infty_score_t compute_E_entry(seq_pos_t al_seq_pos, matidx_t i_index, matidx_t j_index, seq_pos_t i_seq_pos, seq_pos_t i_prev_seq_pos, ScoringView sv);
 
 	/**
 	* \brief compute F matrix value of single matrix element
@@ -382,7 +384,7 @@ namespace LocARNA {
 	* @returns score of E(i,j)
 	*/
 		template<class ScoringView>
-	infty_score_t compute_F_entry(index_t bl, matidx_t i_index, matidx_t j_index, seq_pos_t i_seq_pos, seq_pos_t i_prev_seq_pos, ScoringView sv);
+	infty_score_t  compute_F_entry(seq_pos_t bl_seq_pos, matidx_t i_index, matidx_t j_index, seq_pos_t i_seq_pos, seq_pos_t i_prev_seq_pos, ScoringView sv);
 	/**
 	 * \brief compute M value of single matrix element
 	 *
@@ -394,8 +396,10 @@ namespace LocARNA {
 	 * @returns score of M(i,j) for the arcs left ended by al, bl
 	 *
 	 */
+
 	template<class ScoringView>
-	infty_score_t compute_M_entry(index_t al, index_t bl, matidx_t index_i, matidx_t index_j,ScoringView sv);
+		infty_score_t compute_M_entry(ArcIdx idxA, ArcIdx idxB,
+				seq_pos_t al_seq_pos,seq_pos_t bl_seq_pos, matidx_t index_i, matidx_t index_j,ScoringView sv);
 
 	void
     fill_D_entry(const Arc &arcA,const Arc &arcB);
@@ -414,7 +418,8 @@ namespace LocARNA {
 	 * 
 	 * @pre arc-match (al,ar)~(bl,br) valid due to constraints and heuristics
 	 */
-	void fill_M_entries(pos_type al,pos_type ar,pos_type bl,pos_type br);
+	void fill_M_entries(const Arc &arcA, const Arc &arcB );
+
 
 	/** 
 	 * \brief trace back base deletion within a match of arcs
@@ -427,7 +432,7 @@ namespace LocARNA {
 	 * @param sv scoring view
 	 */
 	template<class ScoringView>
-	void trace_E(pos_type al, matidx_t i_index, pos_type bl, matidx_t j_index, bool top_level, ScoringView sv);
+	void trace_E(ArcIdx idxA, matidx_t i_index, ArcIdx idxB, matidx_t j_index, bool top_level, ScoringView sv);
 
 	/**
 	 * \brief trace back base insertion within a match of arcs
@@ -440,7 +445,7 @@ namespace LocARNA {
 	 * @param sv scoring view
 	 */
 	template<class ScoringView>
-	void trace_F(pos_type al, matidx_t i_index, pos_type bl, matidx_t j_index, bool top_level, ScoringView sv);
+	void trace_F(ArcIdx idxA, matidx_t i_index, ArcIdx idxB, matidx_t j_index, bool top_level, ScoringView sv);
 
 
 	/** 
@@ -454,7 +459,7 @@ namespace LocARNA {
 	 * @param sv scoring view 
 	 */
 	template<class ScoringView>
-	void trace_M(pos_type al, matidx_t i_index, pos_type bl, matidx_t j_index, bool tl, ScoringView sv);
+	void trace_M(ArcIdx idxA, matidx_t i_index, ArcIdx idxB, matidx_t j_index, bool tl, ScoringView sv);
 
 	/** 
 	 * \brief standard cases in trace back (without handling of exclusions)
@@ -467,8 +472,8 @@ namespace LocARNA {
 	 * @param sv scoring view 
 	 */
 	template <class ScoringView>
-	void trace_M_noex(pos_type al, pos_type i,
-			  pos_type bl,pos_type j,
+	void trace_M_noex(ArcIdx idxA, pos_type i,
+			ArcIdx idxB,pos_type j,
 			  bool top_level,
 			  ScoringView sv);
 
@@ -509,7 +514,7 @@ namespace LocARNA {
 	 * @param sv the scoring view to be used
 	 */
 	template <class ScoringView>
-	void trace_IX (pos_type xl, pos_type i, const Arc &arcY, bool isA, ScoringView sv);
+	void trace_IX(ArcIdx idxX, pos_type i, const Arc &arcY, bool isA, ScoringView sv);
 
 	/**
 	   create the entries in the D matrix
@@ -517,13 +522,7 @@ namespace LocARNA {
 	*/
 	void align_D();
 
-	/**
-	 * fill in D the entries with left ends al,bl
-	 * @param al position in sequence A: left end of current arc match
-	 * @param bl position in sequence A: left end of current arc match
-	 */
-	void 
-	fill_D_entries(pos_type al, pos_type bl);
+
 	
 	/** 
 	 * Read/Write access to D matrix
