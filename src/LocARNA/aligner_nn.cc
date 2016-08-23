@@ -82,8 +82,6 @@ namespace LocARNA {
 	Dmat.resize(bpsA.num_bps(),bpsB.num_bps());
 	Dmat.fill(infty_score_t::neg_infty);
 
-	std::cout << " mappers get_max_info_vec_sizes: " <<  mapper_arcsA.get_max_info_vec_size()
-			<< "  and  " << mapper_arcsB.get_max_info_vec_size() << std::endl;
 	IAmat.resize(mapper_arcsA.get_max_info_vec_size()+1, bpsB.num_bps());
 	IBmat.resize(bpsA.num_bps(), mapper_arcsB.get_max_info_vec_size()+1);
 
@@ -101,7 +99,7 @@ namespace LocARNA {
 	gapCostAmat.resize(seqA.length()+3, seqA.length()+3);
 	gapCostBmat.resize(seqB.length()+3, seqB.length()+3);
 
-	trace_debugging_output=true; //!< a static switch to enable generating debugging logs
+	trace_debugging_output=false; //!< a static switch to enable generating debugging logs
 	do_cond_bottom_up=false;
 
 
@@ -179,7 +177,7 @@ namespace LocARNA {
 	const BasePairs &bpsX = isA? bpsA : bpsB;
 	const SparsificationMapper &mapper_arcsX = isA ? mapper_arcsA : mapper_arcsB;
 
-	pos_type xl = bpsX.arc(idxX).left();
+	pos_type xl = get_arc_leftend(idxX, isA);
 
 	seq_pos_t i_seq_pos = mapper_arcsX.get_pos_in_seq_new(idxX, i_index);
 	
@@ -286,23 +284,18 @@ namespace LocARNA {
 	bool constraints_alowed_edge = true;
 	// constraints are ignored,  params->constraints_->allowed_edge(i_seq_pos, j_seq_pos)
 	tainted_infty_score_t max_score = infty_score_t::neg_infty;
-	std::cout << "sA.1" << std::endl;
 	//define variables for sequence positions
 	seq_pos_t i_seq_pos = mapper_arcsA.get_pos_in_seq_new(idxA, i_index);
-	std::cout << "sA.2" << std::endl;
 	seq_pos_t j_seq_pos = mapper_arcsB.get_pos_in_seq_new(idxB, j_index);
-	std::cout << "sA.3" << std::endl;
 	seq_pos_t i_prev_seq_pos = mapper_arcsA.get_pos_in_seq_new(idxA, i_index-1);
-	std::cout << "sA.4" << std::endl;
 	//TODO: Check border i_index==1,0
 	seq_pos_t j_prev_seq_pos = mapper_arcsB.get_pos_in_seq_new(idxB, j_index-1);
 	//TODO: Check border j_index==1,0
-	std::cout << "sA.5" << std::endl;
-	 if (trace_debugging_output) {
-	     std::cout << "compute_M_entry al_seq_pos: " << al_seq_pos << " bl_seq_pos: " << bl_seq_pos
-	 	      << "i:" << i_seq_pos << "/i_index: " << i_index
-	 	      << " j: " << j_seq_pos << "/j_index:"<< j_index << std::endl;
-	 }
+//	 if (trace_debugging_output) {
+//	     std::cout << "compute_M_entry al_seq_pos: " << al_seq_pos << " bl_seq_pos: " << bl_seq_pos
+//	 	      << "i:" << i_seq_pos << "/i_index: " << i_index
+//	 	      << " j: " << j_seq_pos << "/j_index:"<< j_index << std::endl;
+//	 }
 
 	score_t opening_cost_A=0;
 	if (i_prev_seq_pos < (i_seq_pos - 1)) {
@@ -315,7 +308,6 @@ namespace LocARNA {
 		//implicit base insertion because of sparsification
 		opening_cost_B = sv.scoring()->indel_opening();
 	}
-	std::cout << "sA.6" << std::endl;
 
 	// base match
 	if ( constraints_alowed_edge
@@ -342,7 +334,6 @@ namespace LocARNA {
 			  + M(i_index-1, j_index-1) );
 
 	}
-	std::cout << "sA.7" << std::endl;
 	// base del, for efficiency compute_E/F entry invoked within compute_M_entry
 	Emat(i_index, j_index) =
 		compute_E_entry(al_seq_pos, i_index, j_index, i_seq_pos, i_prev_seq_pos, sv);
@@ -352,24 +343,18 @@ namespace LocARNA {
 	Fmat(i_index, j_index) =
 		compute_F_entry(bl_seq_pos, i_index, j_index, j_seq_pos, j_prev_seq_pos, sv);
 	max_score = std::max(max_score,  (tainted_infty_score_t)Fmat(i_index, j_index));
-	std::cout << "sA.8" << std::endl;
 	//list of valid arcs ending at i/j
 	const ArcIdxVec& arcsA = mapper_arcsA.valid_arcs_right_adj(idxA, i_index);
 	const ArcIdxVec& arcsB = mapper_arcsB.valid_arcs_right_adj(idxB, j_index);
-	std::cout << "sA.9" << std::endl;
 	// arc match
 	for (ArcIdxVec::const_iterator arcAIdx = arcsA.begin();
 		 arcAIdx != arcsA.end();
 		 ++arcAIdx) {
 		const Arc& arcA = bpsA.arc(*arcAIdx);
-		std::cout << "sA.9.0" << std::endl;
-		std::cout << "   idxA:" << idxA << "  arcA: " << arcA << std::endl;
 		matidx_t  arcA_left_index_before   =
 		mapper_arcsA.first_valid_mat_pos_before(idxA, arcA.left(), al_seq_pos);
-		std::cout << "sA.9.1" << std::endl;
 		seq_pos_t arcA_left_seq_pos_before =
 		mapper_arcsA.get_pos_in_seq_new(idxA, arcA_left_index_before);
-		std::cout << "sA.9.2" << std::endl;
 
 		opening_cost_A = 0;
 		if (arcA_left_seq_pos_before < (arcA.left() - 1)) {
@@ -445,7 +430,6 @@ namespace LocARNA {
 		}
 		}
 	}
-	std::cout << "sA.10" << std::endl;
 	return max_score;
 	}
 
@@ -586,8 +570,8 @@ namespace LocARNA {
 //	pos_type bl = arcB.left(); pos_type br = arcB.right();
 
 
-	arc_type idxA = arcA.idx();
-	arc_type idxB = arcB.idx();
+	ArcIdx idxA = arcA.idx();
+	ArcIdx idxB = arcB.idx();
 	if (trace_debugging_output) {
 		std::cout << "fill_M_entries: arcs: " << arcA << "  " << arcB << std::endl;
 	}
@@ -602,7 +586,7 @@ namespace LocARNA {
 	//iterate through valid entries
 	matidx_t max_i_index = mapper_arcsA.number_of_valid_mat_pos(idxA);
 	matidx_t max_j_index = mapper_arcsB.number_of_valid_mat_pos(idxB);
-	std::cout << "max_ij_index set to " << max_i_index << " " << max_j_index << std::endl;
+	//std::cout << "max_ij_index set to " << max_i_index << " " << max_j_index << std::endl;
 	for (matidx_t i_index = 1;
 		 i_index < max_i_index ;
 		 i_index++) {
@@ -620,10 +604,10 @@ namespace LocARNA {
 		M(i_index,j_index) = compute_M_entry(idxA, idxB, arcA.left(), arcB.left(), i_index,j_index,def_scoring_view);
 		//toask: where should we care about non_default scoring views
 
-		 if (trace_debugging_output) {
-		     std::cout << "M["<< i_index << "," << j_index << "]="
-		 	      << M(i_index,j_index) << std::endl;
-		 }
+//		 if (trace_debugging_output) {
+//		     std::cout << "M["<< i_index << "," << j_index << "]="
+//		 	      << M(i_index,j_index) << std::endl;
+//		 }
 		}
 	}
 	// if (trace_debugging_output) {
@@ -636,11 +620,10 @@ namespace LocARNA {
      // pre: M,IA,IB matrices are computed by a call to
  void
     AlignerNN::fill_D_entry(const Arc &arcA,const Arc &arcB){
-
 //    	index_t al = arcA.left();
 //    	index_t bl = arcB.left();
-    	arc_type idxA = arcA.idx();
-    	arc_type idxB = arcB.idx();
+	 	ArcIdx idxA = arcA.idx();
+	 	ArcIdx idxB = arcB.idx();
     	//define variables for sequence positions & sparsed indices
 		seq_pos_t ar_seq_pos = arcA.right();
 		seq_pos_t br_seq_pos = arcB.right();
@@ -825,13 +808,9 @@ namespace LocARNA {
 				//compute matrix M
 				//	    stopwatch.start("compM");
 				fill_M_entries(*arcA, *arcB); //fill_M_entries(al, arcA->right(), bl, arcB->right());
-				std::cout << "s1" << std::endl;
 				fill_IA_entries(arcA->idx(), *arcB, arcA->right());
-				std::cout << "s2" << std::endl;
 				fill_IB_entries(*arcA, arcB->idx(), arcB->right());
-				std::cout << "s3" << std::endl;
 				fill_D_entry(*arcA, *arcB);
-				std::cout << "s4" << std::endl;
 				//	    stopwatch.stop("compM");
 
 			}
@@ -913,10 +892,10 @@ namespace LocARNA {
 	    seq_pos_t ps_br = r.endB()+1;
 
 		//TODO: IMPORTANT: Hopefully index 0 is asigned to the pseudo arc!
-	    matidx_t last_index_A = mapper_arcsA.number_of_valid_mat_pos(0)-1;
-	    seq_pos_t last_valid_seq_pos_A = mapper_arcsA.get_pos_in_seq_new(0, last_index_A);
-	    matidx_t last_index_B = mapper_arcsB.number_of_valid_mat_pos(0)-1;
-	    seq_pos_t last_valid_seq_pos_B = mapper_arcsB.get_pos_in_seq_new(0, last_index_B);
+	    matidx_t last_index_A = mapper_arcsA.number_of_valid_mat_pos(bpsA.num_bps())-1;
+	    seq_pos_t last_valid_seq_pos_A = mapper_arcsA.get_pos_in_seq_new(bpsA.num_bps(), last_index_A);
+	    matidx_t last_index_B = mapper_arcsB.number_of_valid_mat_pos(bpsB.num_bps())-1;
+	    seq_pos_t last_valid_seq_pos_B = mapper_arcsB.get_pos_in_seq_new(bpsB.num_bps(), last_index_B);
 	    if(trace_debugging_output) {
 		std::cout << "Align top level with "
 			  << ", last_index_A:" << last_index_A 
@@ -927,16 +906,16 @@ namespace LocARNA {
 	    }
 	    
 	    // stopwatch.start("align top level");
-		scoring->set_closing_arcs(BasePairs__Arc(0, 0, seqA.length()+1),BasePairs__Arc(0, 0, seqB.length()+1)); //TODO: check it
+		scoring->set_closing_arcs(BasePairs__Arc(bpsA.num_bps(), 0, seqA.length()+1),BasePairs__Arc(bpsB.num_bps(), 0, seqB.length()+1)); //TODO: check it
 		std::cout << "align top level" << std::endl;
 
-		fill_M_entries(BasePairs__Arc(0, 0, seqA.length()+1),BasePairs__Arc(0, 0, seqB.length()+1));
+		fill_M_entries(BasePairs__Arc(bpsA.num_bps(), 0, seqA.length()+1),BasePairs__Arc(bpsB.num_bps(), 0, seqB.length()+1));
 	    // tocheck: always use get_startA-1 (not zero) in
 	    // sparsification_mapper and other parts
 	    // stopwatch.stop("align top level");
 	    
-	    if (trace_debugging_output) std::cout << "M matrix: 0 ," << last_index_A <<
-	    		 "  0, " << "," << last_index_B << std::endl
+	    if (trace_debugging_output) std::cout << "M matrix: " << bpsA.num_bps() << " ," << last_index_A <<
+	    		"  , " <<  bpsB.num_bps() <<  "," << last_index_B << std::endl
 						  << M << std::endl;
 	    if (trace_debugging_output) {
 		std::cout << "M(" << last_index_A << "," 
@@ -964,7 +943,7 @@ namespace LocARNA {
 	const BasePairs &bpsX = isA? bpsA : bpsB;
 	const SparsificationMapper &mapper_arcsX = isA ? mapper_arcsA: mapper_arcsB;
 	bool constraints_aligned_pos = false;
-	pos_type xl = bpsX.arc(idxX).left();
+	pos_type xl = get_arc_leftend(idxX, isA);
 
 	seq_pos_t i_seq_pos = mapper_arcsX.get_pos_in_seq_new(idxX, i_index);
 	seq_pos_t i_prev_seq_pos = mapper_arcsX.get_pos_in_seq_new(idxX, i_index-1);
@@ -1374,21 +1353,35 @@ namespace LocARNA {
 	std::cerr << "WARNING: trace_F No trace found!" << std::endl;
     }
 
+    pos_type AlignerNN::get_arc_leftend(ArcIdx &idxX, bool isA) {
+    	if (isA){
+    		if (idxX==bpsA.num_bps())
+    			return 0;
+    		else
+    			return bpsA.arc(idxX).left();
+    	}
+    	else {
+    		if (idxX==bpsB.num_bps())
+				return 0;
+			else
+				return bpsB.arc(idxX).left();
+    	}
+    }
 
     // trace and handle all cases that do not involve exclusions
     template<class ScoringView>
     void AlignerNN::trace_M_noex(ArcIdx idxA, matidx_t i_index, ArcIdx idxB, matidx_t j_index, bool top_level, ScoringView sv)
     {
-
 	seq_pos_t i_seq_pos = mapper_arcsA.get_pos_in_seq_new(idxA, i_index);
 	seq_pos_t j_seq_pos = mapper_arcsB.get_pos_in_seq_new(idxB, j_index);
 
-//TODO: is below needed for track_closing?
-//	if ( i_seq_pos == al && j_seq_pos == bl )
-//	    return;
 
-	pos_type al = bpsA.arc(idxA).left();
-	pos_type bl = bpsA.arc(idxA).left();
+
+	pos_type al = get_arc_leftend(idxA, true);
+	pos_type bl = get_arc_leftend(idxB, false);
+
+	if ( i_seq_pos == al && j_seq_pos == bl )
+	    return;
 
 	seq_pos_t i_prev_seq_pos = al; //tocheck: Important
 	if ( i_seq_pos > al )
@@ -1403,11 +1396,13 @@ namespace LocARNA {
 
 
 
-	// std::cout << i << " " << j << " " << sv.scoring()->basematch(i,j)<<std::endl;
+//	 std::cout << i_index << "-" << j_index << " " << i_seq_pos << "-" << j_seq_pos << "  " << al << "-" << bl <<std::endl;
+
 
 	if (  i_seq_pos > al && j_seq_pos > bl &&
 	      constraints_alowed_edge )
 	    {
+
 		//------------------------------------
 		// calculate possible opening gap costs
 		infty_score_t opening_cost_A;
@@ -1468,6 +1463,7 @@ namespace LocARNA {
 	      !constraints_aligned_pos_A
 	      && M(i_index,j_index) == Emat(i_index, j_index) )
 	    {
+
 		if (trace_debugging_output) std::cout << "base deletion E" << i_index << " , " << j_index << std::endl;
 
 		trace_E(idxA, i_index, idxB, j_index, top_level, sv);
@@ -1509,7 +1505,7 @@ namespace LocARNA {
 
 	const ArcIdxVec& arcsA = mapper_arcsA.valid_arcs_right_adj(idxA, i_index);
 	const ArcIdxVec& arcsB = mapper_arcsB.valid_arcs_right_adj(idxB, j_index);
-	
+
 	for (ArcIdxVec::const_iterator arcAIdx = arcsA.begin(); 
 	     arcAIdx != arcsA.end(); ++arcAIdx) {
 
@@ -1526,11 +1522,13 @@ namespace LocARNA {
 		    //implicit base deletion because of sparsification
 		    opening_cost_A = sv.scoring()->indel_opening();
 		}
-		
+
 		for (ArcIdxVec::const_iterator arcBIdx = arcsB.begin(); 
 		     arcBIdx != arcsB.end(); ++arcBIdx)
 		    {
+
 			const Arc& arcB = bpsB.arc(*arcBIdx);
+			// std::cout << "trace_M_noex: arcA=" << arcA << " arcB=" << arcB << std::endl;
 			matidx_t arcB_left_index_before =
 			    mapper_arcsB.first_valid_mat_pos_before(idxB, arcB.left(), bl);
 			seq_pos_t arcB_left_seq_pos_before =
@@ -1690,18 +1688,18 @@ namespace LocARNA {
 
 	// free end gap version: trace_M(r.startA()-1,max_i,r.startB()-1,max_j,true,sv);
 //	seq_pos_t ps_al = r.startA() - 1;
-	matidx_t last_mat_idx_pos_A = mapper_arcsA.number_of_valid_mat_pos(0) -1;//tocheck: check the correctness
+	matidx_t last_mat_idx_pos_A = mapper_arcsA.number_of_valid_mat_pos(bpsA.num_bps()) -1;//tocheck: check the correctness
 	//seq_pos_t last_seq_pos_A = mapperA.get_pos_in_seq_new(ps_al, last_mat_idx_pos_A);
 
 //	seq_pos_t ps_bl = r.startB() - 1;
-	matidx_t last_mat_idx_pos_B = mapper_arcsB.number_of_valid_mat_pos(0) -1;//tocheck: check the correctness
+	matidx_t last_mat_idx_pos_B = mapper_arcsB.number_of_valid_mat_pos(bpsB.num_bps()) -1;//tocheck: check the correctness
 	//seq_pos_t last_seq_pos_B = mapperB.get_pos_in_seq_new(ps_bl, last_mat_idx_pos_B);
 
 
-	traceback_closing_arcA = Arc(0, 0, seqA.length()+1);//TODO: What to set as index?
-	traceback_closing_arcB = Arc(0, 0, seqB.length()+1);//TODO: What to set as index?
+	traceback_closing_arcA = Arc(bpsA.num_bps(), 0, seqA.length()+1);//TODO: What to set as index?
+	traceback_closing_arcB = Arc(bpsB.num_bps(), 0, seqB.length()+1);//TODO: What to set as index?
 
-	trace_M(0, last_mat_idx_pos_A, 0, last_mat_idx_pos_B, true, sv); //TODO: right side for trace_M differs with align_M
+	trace_M(bpsA.num_bps(), last_mat_idx_pos_A, bpsB.num_bps(), last_mat_idx_pos_B, true, sv); //TODO: right side for trace_M differs with align_M
 	/*    for ( size_type k = last_seq_pos_A + 1; k <= r.endA(); k++)//tocheck: check the correctness
 	      {
 	      alignment.append(k, -1);

@@ -313,6 +313,11 @@ namespace LocARNA {
 	template <class ScoringView>
 	void computeGapCosts(bool isA, ScoringView sv);
 
+	/**
+	 * \brief aux function, returns the left side position of and Arc
+	 *        Supports psueodoarc extra indexing
+	 */
+	pos_type get_arc_leftend(ArcIdx &arc, bool isA);
 
 	/**
 	 * \brief return score of aligning a subsequence to the gap
