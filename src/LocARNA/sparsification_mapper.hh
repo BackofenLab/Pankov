@@ -86,6 +86,9 @@ private:
 	//! computes the datastructures for sparsification mapping based on indexing the arcs
 	void compute_mapping_idx_arcs();
 
+	//! computes the datastructures for sparsification mapping based on indexing the arcs including pseudoarc of external case
+	void compute_mapping_idx_arcs_external();
+
 	//! computes the datastructures for sparsification mapping based on indexing the common left ends
 	void compute_mapping_idx_left_ends();
 
@@ -126,7 +129,9 @@ public:
 			compute_mapping_idx_left_ends();
 		}
 		else{
-			compute_mapping_idx_arcs();
+//			compute_mapping_idx_arcs();
+			std::cout << "Caution compute_mapping_idx_arcs_external is called, Exparna-p compatibility needs to be verified" << std::endl;
+			compute_mapping_idx_arcs_external();
 		}
 	}
 
