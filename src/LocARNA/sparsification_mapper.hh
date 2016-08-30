@@ -102,7 +102,6 @@ private:
 	void valid_pos_external(pos_type cur_pos,const Arc *inner_arc, info_for_pos &struct_pos);
 
 
-
 public:
 	/**
 	 * Constructor
@@ -335,9 +334,17 @@ private:
 	 * 				 is greater or equal to the threshold for a basepair under a loop \n
 	 * 		   false, otherwise
 	 */
-	bool is_valid_arc(const Arc &inner_arc,const Arc &arc)const{
+	bool is_valid_arc(const Arc &inner_arc,const Arc &arc, bool conditional=false)const{
 		assert(inner_arc.left()>arc.left() && inner_arc.right()<arc.right());
-		return rnadata.arc_in_loop_prob(inner_arc.left(),inner_arc.right(),arc.left(),arc.right())>=prob_basepair_in_loop_threshold;
+		if (conditional){
+			double outer_prob = rnadata.arc_prob(arc.left(),arc.right());
+			double joint_prob = rnadata.arc_in_loop_prob(inner_arc.left(),inner_arc.right(),arc.left(),arc.right());
+			if (outer_prob == 0)
+				return false;
+			return (joint_prob/outer_prob >= 0.01) ;
+		}
+		else
+			return rnadata.arc_in_loop_prob(inner_arc.left(),inner_arc.right(),arc.left(),arc.right())>=prob_basepair_in_loop_threshold;
 	}
 
 	/**

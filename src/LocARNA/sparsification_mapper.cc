@@ -54,6 +54,7 @@ void SparsificationMapper::compute_mapping_idx_arcs(){
 void SparsificationMapper::compute_mapping_idx_arcs_external(){
 	info_for_pos struct_pos;
 	size_type seq_length = rnadata.length();
+	bool do_conditional_filter = true;
 
 	left_adj_vec.resize(bps.num_bps()+1);
 	info_valid_seq_pos_vecs.resize(bps.num_bps()+1);
@@ -88,7 +89,7 @@ void SparsificationMapper::compute_mapping_idx_arcs_external(){
 					valid_pos_external(j,&(*inner_arc),struct_pos);
 				}
 				else {
-					if(!is_valid_arc(*inner_arc,arc)) continue;
+					if(!is_valid_arc(*inner_arc,arc, do_conditional_filter)) continue;
 					left_adj_vec.at(arc.idx()).at(inner_arc->left()-arc.left()).push_back(inner_arc->idx());
 					struct_pos.seq_pos=j;//-arc.left();
 					struct_pos.valid_arcs.push_back(inner_arc->idx());
