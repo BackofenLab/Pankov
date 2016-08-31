@@ -367,9 +367,17 @@ public:
 	 * 				 greater or equal to the threshold for a basepair under a loop \n
 	 * 		   false, otherwise
 	 */
-	bool is_valid_pos(const Arc &arc,seq_pos_t pos) const{
+	bool is_valid_pos(const Arc &arc,seq_pos_t pos, bool conditional=false) const{
 	    assert(arc.left()<pos && pos<arc.right());
-	    return rnadata.unpaired_in_loop_prob(pos,arc.left(),arc.right())>=prob_unpaired_in_loop_threshold; //todo: additional variable for external case
+	    if (conditional){
+			double outer_prob = rnadata.arc_prob(arc.left(),arc.right());
+			double joint_prob = rnadata.unpaired_in_loop_prob(pos,arc.left(),arc.right());
+			if (outer_prob == 0)
+				return false;
+			return (joint_prob/outer_prob >= 0.01) ;
+		}
+		else
+			return rnadata.unpaired_in_loop_prob(pos,arc.left(),arc.right())>=prob_unpaired_in_loop_threshold; //todo: additional variable for external case
 	}
 
 	/**

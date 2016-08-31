@@ -77,7 +77,7 @@ void SparsificationMapper::compute_mapping_idx_arcs_external(){
 		    if (k==bps.num_bps()) {
 		    	valid_pos_external(j,0,struct_pos);
 		    }
-		    else if(is_valid_pos(arc,j)){
+		    else if(is_valid_pos(arc,j, do_conditional_filter)){
 				struct_pos.seq_pos=j;
 				struct_pos.unpaired=true;
 			}
