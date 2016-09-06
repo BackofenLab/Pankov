@@ -684,12 +684,12 @@ namespace LocARNA {
 
 		 if (closingA.left() == 0 && closingA.right() == seqA.length()+1) { //TODO: And or OR?
 //		 if (non_cond){
-			 scoreA =  log (probA);
+			 scoreA =  probA;
 		 }
 		 else
 			 if ( probA != 0 && joint_probA != 0) {
 //			 std::cout << "=======A " <<  log (joint_probA/prob_closingA);
-			 scoreA =  log (joint_probA/prob_closingA);
+			 scoreA =  joint_probA/prob_closingA;
 
 		 }
 		 else
@@ -697,12 +697,12 @@ namespace LocARNA {
 
 		 if (closingB.left() == 0 && closingB.right() == seqB.length()+1) { //TODO: And or OR?
 //		 if (non_cond){
-			scoreB =  log (probB);
+			scoreB =  probB;
 		 }
 		 else
 			 if ( probB != 0 && joint_probB != 0) {
 //			 std::cout << "=======B " <<  log (joint_probB/prob_closingB) << std::endl;
-			 scoreB = log (joint_probB/prob_closingB);
+			 scoreB = joint_probB/prob_closingB;
 		 }
 		 else
 			 scoreB = cond_zero_penalty;
@@ -714,11 +714,11 @@ namespace LocARNA {
 				 (closingB.left() == 0 && closingB.right() == seqB.length()+1))
 				 {
 
-			 return (score_t)(params->struct_weight * (5+scoreA+scoreB))+( (params->tau_factor * sequence_contribution) / 100 );
+			 return (score_t)(probToWeight(scoreA,params->exp_probA) +probToWeight(scoreB,params->exp_probB))+( (params->tau_factor * sequence_contribution) / 100 );
 		 }
 		 else
 		 {
-			 return (score_t)(params->struct_weight * (5+scoreA+scoreB))+( (params->tau_factor * sequence_contribution) / 100 );
+			 return (score_t)(probToWeight(scoreA,params->exp_probA) +probToWeight(scoreB,params->exp_probB))+( (params->tau_factor * sequence_contribution) / 100 );
 		 }
 
 //		 return  + log (joint_probB/prob_closingB);
@@ -840,7 +840,7 @@ namespace LocARNA {
 
     score_t
     Scoring::arcDel_conditional(const Arc &arcX, const Sequence &seqX, const RnaData &rna_dataX,
-        		const ExtRnaData &ext_rna_dataX, const Arc& closingX) const {
+        		const ExtRnaData &ext_rna_dataX, const Arc& closingX, double p0) const {
 
 
 
@@ -859,23 +859,23 @@ namespace LocARNA {
 		 score_t cond_zero_penalty = -10;
 
 		 if (closingX.left() == 0 && closingX.right() == seqX.length()+1) { //TODO: And or OR?
-			 scoreX =  log (probX);
+			 scoreX =  probX;
 		 }
 		 else
 			 if ( probX != 0 && joint_probX != 0) {
 //			 std::cout << "=======A " <<  log (joint_probA/prob_closingA);
-			 scoreX =  log (joint_probX/prob_closingX);
+			 scoreX =  joint_probX/prob_closingX;
 		 }
 		 else
 		 	 scoreX = cond_zero_penalty;
 
 		 if (closingX.left() == 0 && (closingX.right() == seqX.length()+1))
 		 {
-			 return (score_t)(params->struct_weight * (5+scoreX));
+			 return (score_t)(probToWeight(scoreX,p0));
 		 }
 		 else
 		 {
-			 return (score_t)(params->struct_weight * (5+scoreX));
+			 return (score_t)(probToWeight(scoreX,p0));
 		 }
 
     }
@@ -892,10 +892,10 @@ namespace LocARNA {
 	if ( conditonal_scores ) { // Use conditional-prob scores
 		score_t ret_cond;
 		if (isA)
-			ret_cond = arcDel_conditional(arcX, seqA, rna_dataA, ext_rna_dataA, closingA) +
+			ret_cond = arcDel_conditional(arcX, seqA, rna_dataA, ext_rna_dataA, closingA, params->exp_probA) +
 					loop_indel_score(gapX(arcX.left(), isA) + gapX(arcX.right(), isA));
 		else
-			ret_cond = arcDel_conditional(arcX, seqB, rna_dataB, ext_rna_dataB, closingB) +
+			ret_cond = arcDel_conditional(arcX, seqB, rna_dataB, ext_rna_dataB, closingB, params->exp_probB) +
 					loop_indel_score(gapX(arcX.left(), isA) + gapX(arcX.right(), isA));
 //		std::cout << "   ret_cond:" << ret_cond << std::endl;
 		return ret_cond;

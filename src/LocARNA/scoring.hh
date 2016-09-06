@@ -628,7 +628,7 @@ namespace LocARNA {
 
 	score_t
 	arcDel_conditional(const Arc &arcX, const Sequence &seqX, const RnaData &rna_dataX,
-	        		const ExtRnaData &ext_rna_dataX, const Arc& closingX) const;
+	        		const ExtRnaData &ext_rna_dataX, const Arc& closingX, double p0) const;
 
 	/** 
 	 * @brief Very basic interface, score of aligning a basepair to gap 
