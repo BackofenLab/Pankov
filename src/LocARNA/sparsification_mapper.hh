@@ -341,7 +341,7 @@ private:
 			double joint_prob = rnadata.arc_in_loop_prob(inner_arc.left(),inner_arc.right(),arc.left(),arc.right());
 			if (outer_prob == 0)
 				return false;
-			return (joint_prob/outer_prob >= 0.01) ;
+			return (joint_prob/outer_prob >= 0.0001) ;
 		}
 		else
 			return rnadata.arc_in_loop_prob(inner_arc.left(),inner_arc.right(),arc.left(),arc.right())>=prob_basepair_in_loop_threshold;
@@ -355,6 +355,7 @@ private:
 	 * 		   false, otherwise
 	 */
 	bool is_valid_arc_external(const Arc &inner_arc)const{
+		return true;
 			return rnadata.arc_external_prob(inner_arc.left(),inner_arc.right())>=prob_basepair_in_loop_threshold;
 	}
 
@@ -374,7 +375,7 @@ public:
 			double joint_prob = rnadata.unpaired_in_loop_prob(pos,arc.left(),arc.right());
 			if (outer_prob == 0)
 				return false;
-			return (joint_prob/outer_prob >= 0.01) ;
+			return (joint_prob/outer_prob >= 0.0001) ;
 		}
 		else
 			return rnadata.unpaired_in_loop_prob(pos,arc.left(),arc.right())>=prob_unpaired_in_loop_threshold; //todo: additional variable for external case
@@ -386,6 +387,7 @@ public:
 	 * @return true, if the sequence position pos has a probability to be external greater than or equal to prob_unpaired_in_loop_threshold
 	 */
 	bool is_valid_pos_external(seq_pos_t pos) const{
+		return true;
 	    return rnadata.unpaired_external_prob(pos)>=prob_unpaired_in_loop_threshold; //todo: additional variable for external case
 	}
 };
