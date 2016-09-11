@@ -714,11 +714,11 @@ namespace LocARNA {
 				 (closingB.left() == 0 && closingB.right() == seqB.length()+1))
 				 {
 
-			 return (score_t)(params->struct_weight * (4+scoreA+scoreB))+( (params->tau_factor * sequence_contribution) / 100 );
+			 return (score_t)(params->struct_weight * (4+log(scoreA*scoreB)))+( (params->tau_factor * sequence_contribution) / 100 );
 		 }
 		 else
 		 {
-			 return (score_t)(params->struct_weight * (4+scoreA+scoreB))+( (params->tau_factor * sequence_contribution) / 100 );
+			 return (score_t)(params->struct_weight * (4+log(scoreA+scoreB)))+( (params->tau_factor * sequence_contribution) / 100 );
 		 }
 
 //		 return  + log (joint_probB/prob_closingB);
@@ -871,11 +871,11 @@ namespace LocARNA {
 
 		 if (closingX.left() == 0 && (closingX.right() == seqX.length()+1))
 		 {
-			 return (score_t)(params->struct_weight * (2+scoreX));
+			 return (score_t)(params->struct_weight * (2+log(scoreX)));
 		 }
 		 else
 		 {
-			 return (score_t)(params->struct_weight * (2+scoreX));
+			 return (score_t)(params->struct_weight * (2+log(scoreX)));
 		 }
 
     }
