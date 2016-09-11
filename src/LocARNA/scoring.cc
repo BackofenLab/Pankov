@@ -655,6 +655,8 @@ namespace LocARNA {
 
 		double probA = rna_dataA.arc_prob(arcA.left(), arcA.right());
 		double probB = rna_dataB.arc_prob(arcB.left(), arcB.right());
+		double probExtA = ext_rna_dataA.arc_external_prob(arcA.left(), arcA.right());
+		double probExtB = ext_rna_dataB.arc_external_prob(arcB.left(), arcB.right());
 
 		double joint_probA = ext_rna_dataA.arc_in_loop_prob(arcA.left(), arcA.right(),
 				 closingA.left(),closingA.right());
@@ -684,7 +686,7 @@ namespace LocARNA {
 
 		 if (closingA.left() == 0 && closingA.right() == seqA.length()+1) { //TODO: And or OR?
 //		 if (non_cond){
-			 scoreA =  probA;
+			 scoreA =  probExtA;
 		 }
 		 else
 			 if ( probA != 0 && joint_probA != 0) {
@@ -697,7 +699,7 @@ namespace LocARNA {
 
 		 if (closingB.left() == 0 && closingB.right() == seqB.length()+1) { //TODO: And or OR?
 //		 if (non_cond){
-			scoreB =  probB;
+			scoreB =  probExtB;
 		 }
 		 else
 			 if ( probB != 0 && joint_probB != 0) {
