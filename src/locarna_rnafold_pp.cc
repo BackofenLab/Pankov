@@ -130,8 +130,8 @@ option_def my_options[] = {
     {"dangling",0,0,O_ARG_INT,&clp.opt_dangling,"2","","Dangling option value"},
     {"in-loop",0,&clp.opt_in_loop,O_NO_ARG,0,O_NODEFAULT,"","Compute in-loop probabilities"},
     {"min-prob",'p',0,O_ARG_DOUBLE,&clp.min_prob,"0.0005","prob","Minimal probability"},
-    {"p_unpaired_in_loop",0,0,O_ARG_DOUBLE,&clp.prob_unpaired_in_loop_threshold,"0.0005","threshold","Threshold for prob_unpaired_in_loop"},
-    {"p_basepair_in_loop",0,0,O_ARG_DOUBLE,&clp.prob_basepair_in_loop_threshold,"0.0005","threshold","Threshold for prob_basepair_in_loop"}, //todo: is the default threshold value reasonable?
+    {"p-unpaired-in-loop",0,0,O_ARG_DOUBLE,&clp.prob_unpaired_in_loop_threshold,"0.00001","threshold","Threshold for prob_unpaired_in_loop"},
+    {"p-basepair-in-loop",0,0,O_ARG_DOUBLE,&clp.prob_basepair_in_loop_threshold,"0.0001","threshold","Threshold for prob_basepair_in_loop"}, //todo: is the default threshold value reasonable?
     {"output",'o',0,O_ARG_STRING,&clp.output_file,"","filename","Output file"},
     {"force-alifold",0,&clp.force_alifold,O_NO_ARG,0,O_NODEFAULT,"","Force alifold for single sequnces"},
     {"",0,0,O_ARG_STRING,&clp.input_file,"-","filename","Input file"},
