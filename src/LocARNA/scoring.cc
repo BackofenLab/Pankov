@@ -718,7 +718,7 @@ namespace LocARNA {
 		 }
 		 else
 		 {
-			 return (score_t)(params->struct_weight * (4+log(scoreA+scoreB)))+( (params->tau_factor * sequence_contribution) / 100 );
+			 return (score_t)(params->struct_weight * (4+log(scoreA*scoreB)))+( (params->tau_factor * sequence_contribution) / 100 );
 		 }
 
 //		 return  + log (joint_probB/prob_closingB);
