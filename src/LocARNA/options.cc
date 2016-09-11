@@ -568,11 +568,11 @@ namespace LocARNA {
                PACKAGE_NAME,
                PACKAGE_SHORT_DESCRIPTION);
         printf("%s\n\n",PACKAGE_LONG_DESCRIPTION);
-        printf("Please find the online documentation at\n"
-               ".. __: %s\n\n",PACKAGE_URL);
-        printf("The software package is available for download at\n"
-               ".. __: %s\n"
-               ,PACKAGE_URL);
+       // printf("Please find the online documentation at\n"
+       //       ".. __: %s\n\n",PACKAGE_URL);
+       // printf("The software package is available for download at\n"
+       //        ".. __: %s\n"
+       //        ,PACKAGE_URL);
        	printf("    ]]></help>\n\n");
 
        	printf("    <citations>\n"
