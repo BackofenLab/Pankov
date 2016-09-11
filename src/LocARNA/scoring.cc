@@ -682,11 +682,12 @@ namespace LocARNA {
 		 assert (probB != 0);
 		 double scoreA = 0;
 		 double scoreB = 0;
-		 score_t cond_zero_penalty = -10;
+		 double cond_zero_penalty = 0.0001;
 
 		 if (closingA.left() == 0 && closingA.right() == seqA.length()+1) { //TODO: And or OR?
 //		 if (non_cond){
-			 scoreA =  probExtA;
+			 scoreA =  (probExtA==0)?cond_zero_penalty:probExtA;
+
 		 }
 		 else
 			 if ( probA != 0 && joint_probA != 0) {
@@ -699,7 +700,8 @@ namespace LocARNA {
 
 		 if (closingB.left() == 0 && closingB.right() == seqB.length()+1) { //TODO: And or OR?
 //		 if (non_cond){
-			scoreB =  probExtB;
+			 scoreB =  (probExtB==0)?cond_zero_penalty:probExtB;
+
 		 }
 		 else
 			 if ( probB != 0 && joint_probB != 0) {
@@ -847,6 +849,7 @@ namespace LocARNA {
 
 
 		double probX = rna_dataX.arc_prob(arcX.left(), arcX.right());
+		double probExtX = ext_rna_dataX.arc_external_prob(arcX.left(), arcX.right());
 
 		double joint_probX = ext_rna_dataX.arc_in_loop_prob(arcX.left(), arcX.right(),
 				 closingX.left(),closingX.right());
@@ -858,10 +861,10 @@ namespace LocARNA {
     	 */
 		 assert (probX != 0);
 		 double scoreX = 0;
-		 score_t cond_zero_penalty = -10;
+		 double cond_zero_penalty = 0.0001;
 
 		 if (closingX.left() == 0 && closingX.right() == seqX.length()+1) { //TODO: And or OR?
-			 scoreX =  probX;
+			 scoreX =  (probExtX==0)?cond_zero_penalty:probExtX;
 		 }
 		 else
 			 if ( probX != 0 && joint_probX != 0) {
