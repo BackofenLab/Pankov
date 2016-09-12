@@ -682,17 +682,17 @@ namespace LocARNA {
 		 assert (probB != 0);
 		 double scoreA = 0;
 		 double scoreB = 0;
-		 double cond_zero_penalty = 0.0001;
+		 double cond_zero_penalty = -9.21; // ~=ln(0.0001)
 
 		 if (closingA.left() == 0 && closingA.right() == seqA.length()+1) { //TODO: And or OR?
 //		 if (non_cond){
-			 scoreA =  (probExtA==0)?cond_zero_penalty:probExtA;
+			 scoreA =  (probExtA==0)?cond_zero_penalty:log(probExtA);
 
 		 }
 		 else
 			 if ( probA != 0 && joint_probA != 0) {
 //			 std::cout << "=======A " <<  log (joint_probA/prob_closingA);
-			 scoreA =  joint_probA/prob_closingA;
+			 scoreA =  log(joint_probA/prob_closingA);
 
 		 }
 		 else
@@ -700,13 +700,13 @@ namespace LocARNA {
 
 		 if (closingB.left() == 0 && closingB.right() == seqB.length()+1) { //TODO: And or OR?
 //		 if (non_cond){
-			 scoreB =  (probExtB==0)?cond_zero_penalty:probExtB;
+			 scoreB =  (probExtB==0)?cond_zero_penalty:log(probExtB);
 
 		 }
 		 else
 			 if ( probB != 0 && joint_probB != 0) {
 //			 std::cout << "=======B " <<  log (joint_probB/prob_closingB) << std::endl;
-			 scoreB = joint_probB/prob_closingB;
+			 scoreB = log(joint_probB/prob_closingB);
 		 }
 		 else
 			 scoreB = cond_zero_penalty;
@@ -718,11 +718,11 @@ namespace LocARNA {
 				 (closingB.left() == 0 && closingB.right() == seqB.length()+1))
 				 {
 
-			 return (score_t)(params->struct_weight * (4+log(scoreA*scoreB)))+( (params->tau_factor * sequence_contribution) / 100 );
+			 return (score_t)(params->struct_weight * (4+scoreA+scoreB))+( (params->tau_factor * sequence_contribution) / 100 );
 		 }
 		 else
 		 {
-			 return (score_t)(params->struct_weight * (4+log(scoreA*scoreB)))+( (params->tau_factor * sequence_contribution) / 100 );
+			 return (score_t)(params->struct_weight * (4+scoreA+scoreB))+( (params->tau_factor * sequence_contribution) / 100 );
 		 }
 
 //		 return  + log (joint_probB/prob_closingB);
@@ -861,26 +861,26 @@ namespace LocARNA {
     	 */
 		 assert (probX != 0);
 		 double scoreX = 0;
-		 double cond_zero_penalty = 0.0001;
+		 double cond_zero_penalty = -9.21; // ~=ln(0.0001)
 
 		 if (closingX.left() == 0 && closingX.right() == seqX.length()+1) { //TODO: And or OR?
-			 scoreX =  (probExtX==0)?cond_zero_penalty:probExtX;
+			 scoreX =  (probExtX==0)?cond_zero_penalty:log(probExtX);
 		 }
 		 else
 			 if ( probX != 0 && joint_probX != 0) {
 //			 std::cout << "=======A " <<  log (joint_probA/prob_closingA);
-			 scoreX =  joint_probX/prob_closingX;
+			 scoreX =  log(joint_probX/prob_closingX);
 		 }
 		 else
 		 	 scoreX = cond_zero_penalty;
 
 		 if (closingX.left() == 0 && (closingX.right() == seqX.length()+1))
 		 {
-			 return (score_t)(params->struct_weight * (2+log(scoreX)));
+			 return (score_t)(params->struct_weight * (2+scoreX));
 		 }
 		 else
 		 {
-			 return (score_t)(params->struct_weight * (2+log(scoreX)));
+			 return (score_t)(params->struct_weight * (2+scoreX));
 		 }
 
     }
