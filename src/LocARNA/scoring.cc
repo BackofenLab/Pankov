@@ -653,17 +653,11 @@ namespace LocARNA {
 //		std::cout << "params->tau_factor: " << params->tau_factor << std::endl;
 //		assert (sequence_contribution == 0); //TODO: Temporary accept  tau to be only zero
 
-		double probA = rna_dataA.arc_prob(arcA.left(), arcA.right());
-		double probB = rna_dataB.arc_prob(arcB.left(), arcB.right());
-		double probExtA = ext_rna_dataA.arc_external_prob(arcA.left(), arcA.right());
-		double probExtB = ext_rna_dataB.arc_external_prob(arcB.left(), arcB.right());
 
-		double joint_probA = ext_rna_dataA.arc_in_loop_prob(arcA.left(), arcA.right(),
-				 closingA.left(),closingA.right());
-		double joint_probB = ext_rna_dataB.arc_in_loop_prob(arcB.left(), arcB.right(),
-		 				 closingB.left(),closingB.right());
-		double prob_closingA = rna_dataA.arc_prob(closingA.left(), closingA.right());
-		double prob_closingB = rna_dataB.arc_prob(closingB.left(), closingB.right());
+//
+//		double probA = rna_dataA.arc_prob(arcA.left(), arcA.right());
+//		double probB = rna_dataB.arc_prob(arcB.left(), arcB.right());
+
 
 		/*
 		std::cout <<  "   arcA: " << arcA << "=" << probA <<
@@ -678,38 +672,44 @@ namespace LocARNA {
 
 
 //			std::cout << "sequence_contribution: " << sequence_contribution << std::endl;
-		 assert (probA != 0);
-		 assert (probB != 0);
-		 double scoreA = 0;
-		 double scoreB = 0;
-		 double cond_zero_penalty = -9.21; // ~=ln(0.0001)
+		double cond_zero_penalty = -9.21; // ~=ln(0.0001)
+		double scoreA = cond_zero_penalty;
+		double scoreB = cond_zero_penalty;
+
 
 		 if (closingA.left() == 0 && closingA.right() == seqA.length()+1) { //TODO: And or OR?
 //		 if (non_cond){
+			double probExtA = ext_rna_dataA.arc_external_prob(arcA.left(), arcA.right());
 			 scoreA =  (probExtA==0)?cond_zero_penalty:log(probExtA);
 
 		 }
 		 else
-			 if ( probA != 0 && joint_probA != 0) {
+		 {
+			double joint_probA = ext_rna_dataA.arc_in_loop_prob(arcA.left(), arcA.right(),
+					 closingA.left(),closingA.right());
+			double prob_closingA = rna_dataA.arc_prob(closingA.left(), closingA.right());
+
 //			 std::cout << "=======A " <<  log (joint_probA/prob_closingA);
-			 scoreA =  log(joint_probA/prob_closingA);
+			if ( prob_closingA != 0 && joint_probA != 0)
+				scoreA =  log(joint_probA/prob_closingA);
 
 		 }
-		 else
-		 	 scoreA = cond_zero_penalty;
 
 		 if (closingB.left() == 0 && closingB.right() == seqB.length()+1) { //TODO: And or OR?
 //		 if (non_cond){
+			 double probExtB = ext_rna_dataB.arc_external_prob(arcB.left(), arcB.right());
 			 scoreB =  (probExtB==0)?cond_zero_penalty:log(probExtB);
 
 		 }
-		 else
-			 if ( probB != 0 && joint_probB != 0) {
+		 else	 {
+			double joint_probB = ext_rna_dataB.arc_in_loop_prob(arcB.left(), arcB.right(),
+							 closingB.left(),closingB.right());
+			double prob_closingB = rna_dataB.arc_prob(closingB.left(), closingB.right());
 //			 std::cout << "=======B " <<  log (joint_probB/prob_closingB) << std::endl;
-			 scoreB = log(joint_probB/prob_closingB);
+			if ( prob_closingB != 0 && joint_probB != 0)
+				scoreB = log(joint_probB/prob_closingB);
 		 }
-		 else
-			 scoreB = cond_zero_penalty;
+
 //		 std::cout << "ret_score: " << ret_score << " Score: " << params->struct_weight * (10.0+ret_score) << std::endl;
 //		 if (non_cond){
 
@@ -848,31 +848,30 @@ namespace LocARNA {
 
 
 
-		double probX = rna_dataX.arc_prob(arcX.left(), arcX.right());
-		double probExtX = ext_rna_dataX.arc_external_prob(arcX.left(), arcX.right());
 
-		double joint_probX = ext_rna_dataX.arc_in_loop_prob(arcX.left(), arcX.right(),
-				 closingX.left(),closingX.right());
-		double prob_closingX = rna_dataX.arc_prob(closingX.left(), closingX.right());
+
     	/*std::cout << "arcDel_conditional" << std::endl;
 		std::cout <<  "   arcX:"  << arcX << "=" << probX <<
 				" closingX:" << closingX << "=" << prob_closingX <<
 				" jointX: " <<  joint_probX<< std::endl;
     	 */
-		 assert (probX != 0);
-		 double scoreX = 0;
 		 double cond_zero_penalty = -9.21; // ~=ln(0.0001)
+		 double scoreX = cond_zero_penalty;
 
 		 if (closingX.left() == 0 && closingX.right() == seqX.length()+1) { //TODO: And or OR?
-			 scoreX =  (probExtX==0)?cond_zero_penalty:log(probExtX);
+				double probExtX = ext_rna_dataX.arc_external_prob(arcX.left(), arcX.right());
+				scoreX =  (probExtX==0)?cond_zero_penalty:log(probExtX);
 		 }
-		 else
-			 if ( probX != 0 && joint_probX != 0) {
+		 else {
+			double joint_probX = ext_rna_dataX.arc_in_loop_prob(arcX.left(), arcX.right(),
+					 closingX.left(),closingX.right());
+			double prob_closingX = rna_dataX.arc_prob(closingX.left(), closingX.right());
+
 //			 std::cout << "=======A " <<  log (joint_probA/prob_closingA);
-			 scoreX =  log(joint_probX/prob_closingX);
+			 if ( prob_closingX != 0 && joint_probX != 0)
+				 scoreX =  log(joint_probX/prob_closingX);
 		 }
-		 else
-		 	 scoreX = cond_zero_penalty;
+
 
 		 if (closingX.left() == 0 && (closingX.right() == seqX.length()+1))
 		 {
