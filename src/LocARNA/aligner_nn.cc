@@ -99,7 +99,7 @@ namespace LocARNA {
 	gapCostAmat.resize(seqA.length()+3, seqA.length()+3);
 	gapCostBmat.resize(seqB.length()+3, seqB.length()+3);
 
-	trace_debugging_output=false; //!< a static switch to enable generating debugging logs
+	trace_debugging_output=true; //!< a static switch to enable generating debugging logs
 	do_cond_bottom_up=false;
 
 
@@ -352,7 +352,7 @@ namespace LocARNA {
 	const ArcIdxVec& arcsA = mapper_arcsA.valid_arcs_right_adj(idxA, i_index);
 	const ArcIdxVec& arcsB = mapper_arcsB.valid_arcs_right_adj(idxB, j_index);
 
-	//domain insertion
+	//domain deletion
 	for (ArcIdxVec::const_iterator arcAIdx = arcsA.begin();
 	 arcAIdx != arcsA.end();
 	 ++arcAIdx) {
@@ -393,6 +393,46 @@ namespace LocARNA {
 
 	}
 
+	//domain insertion
+	for (ArcIdxVec::const_iterator arcBIdx = arcsB.begin();
+	 arcBIdx != arcsB.end();
+	 ++arcBIdx) {
+		const Arc& arcB = bpsB.arc(*arcBIdx);
+		matidx_t  arcB_left_index_before   =
+		mapper_arcsB.first_valid_mat_pos_before(idxB, arcB.left(), bl_seq_pos);
+		seq_pos_t arcB_left_seq_pos_before =
+		mapper_arcsB.get_pos_in_seq_new(idxB, arcB_left_index_before);
+
+		opening_cost_B = 0;
+		if (arcB_left_seq_pos_before < (arcB.left() - 1)) {
+		// implicit base deletion because of sparsification
+		opening_cost_B = sv.scoring()->indel_opening();
+		}
+
+		Arc empty_arcA = BasePairs__Arc(bpsA.num_bps(), 0, 0);
+
+		infty_score_t arc_indel_score_open = getGapCostBetween( arcB_left_seq_pos_before, arcB.left(), false) +
+		sv.D(empty_arcA, arcB) + sv.scoring()->arcDel(arcB, false)
+		 + sv.scoring()->indel_opening_loop();
+
+
+		tainted_infty_score_t domain_ins_score =
+			arc_indel_score_open
+			+ opening_cost_B
+			+ M(i_index, arcB_left_index_before);
+		max_score = std::max(max_score,  domain_ins_score);
+		if (trace_debugging_output) {
+				std::cout << "\M: domain ins: arcB" << arcB
+					  << " D(arcA,empty_arcB)=" << sv.D(empty_arcA, arcB)
+					  << " sv.scoring()->arcDel(arcB, true)="
+					  <<sv.scoring()->arcDel(arcB, false)
+					  << "M(" << i_index <<","
+					  << arcB_left_index_before << ")="
+					  << M(j_index, arcB_left_index_before)
+					  << std::endl;
+		}
+
+	}
 
 	// arc match
 	for (ArcIdxVec::const_iterator arcAIdx = arcsA.begin();
@@ -590,6 +630,8 @@ namespace LocARNA {
 	    std::cout << "fill_IB_entries: " << "arcA=" << arcA<< ", idxB=" << idxB << "max_br=" << max_br << std::endl;
 
 	IBmat(arcA.idx(), 0) = infty_score_t::neg_infty;
+	if (arcA.idx()==bpsA.num_bps())
+		IBmat(arcA.idx(), 0) = (infty_score_t)0; //domain insdel base case
 
 	pos_type max_right_index;
 	max_right_index = mapper_arcsB.number_of_valid_mat_pos(idxB);
@@ -598,14 +640,15 @@ namespace LocARNA {
 
 
 	    IBmat(arcA.idx(), j_index) = compute_IX(idxB, arcA, j_index, false, def_scoring_view);
-//	    std::cout << "IBmat( << " << arcA.idx() << "," <<  j_index << ")=" << IBmat(arcA.idx(), j_index) << std::endl;
+	    std::cout << "IBmat( << " << arcA.idx() << "," <<  j_index << ")=" << IBmat(arcA.idx(), j_index) << std::endl;
 	    //fill IBD matrix entries
 	    seq_pos_t j_seq_pos = mapper_arcsB.get_pos_in_seq_new(idxB, j_index);
-	    //	std::cout << "j_seq_pos=" << j_seq_pos  << std::endl;
+	    	std::cout << "j_seq_pos=" << j_seq_pos  << std::endl;
 	    seq_pos_t j_prev_seq_pos = mapper_arcsB.get_pos_in_seq_new(idxB, j_index-1);
-	    //	std::cout <<" j_prev_seq_pos=" << j_prev_seq_pos << std::endl;
+	    	std::cout <<" j_prev_seq_pos=" << j_prev_seq_pos << std::endl;
 	}
-	//	std::cout << "fill_IB_entries arcA: " << arcA << " bl: "<< bl <<  " IBmat: " << std::endl << IBmat << std::endl;
+	std::cout << "finito" << std::endl;
+//		std::cout << "fill_IB_entries arcA: " << arcA << " bl: "<< bl <<  " IBmat: " << std::endl << IBmat << std::endl;
     }
 
 //compute/align matrix M
@@ -783,11 +826,77 @@ namespace LocARNA {
     }
 
 
+	// Fill entries of domain insertion deletion i.e. IA with empty B sub-sequence and the opposite
+ 	void AlignerNN::compute_IAB_entries_domain(seq_pos_t start, seq_pos_t end, bool isA) {
+
+ 		const SparsificationMapper& mapper_arcsX = (isA)?mapper_arcsA:mapper_arcsB;
+ 		const BasePairs &bspX = (isA)?bpsA:bpsB;
+ 		const BasePairs &bpsY = (isA)?bpsB:bpsA;;
+
+	for (pos_type xl=end+1; xl>start; ) {
+		xl--;
+		if (trace_debugging_output) std::cout << "align_D xl: " << xl << std::endl;
+
+		const BasePairs::LeftAdjList &adjlX = bspX.left_adjlist(xl);
+		if ( adjlX.empty() )
+		{
+			if (trace_debugging_output)	std::cout << "empty left_adjlist(xl=)" << xl << std::endl;
+			continue;
+		}
+ 		Arc empty_arcY = BasePairs__Arc(bpsY.num_bps(), 0, 0);
+		for (BasePairs::LeftAdjList::const_iterator arcX =
+				adjlX.begin(); arcX != adjlX.end(); ++arcX) {
+
+			if (trace_debugging_output) {
+				std::cout << "align_D domain insertion isA=" << isA  << "  arcX():" << *arcX << std::endl;
+				std::cout << "fill_IA_entries: " << xl << "," << arcX->right() <<   std::endl;
+				std::cout << "                 arcX:" <<  *arcX  << std::endl;
+			}
+
+			if (isA){
+				scoring->set_closing_arcs(*arcX, empty_arcY);
+				is_innermost_arcA = true;
+				fill_IA_entries(arcX->idx(), empty_arcY, arcX->right());
+			}
+			else {
+				scoring->set_closing_arcs(empty_arcY, *arcX);
+				is_innermost_arcB = true;
+				fill_IB_entries(empty_arcY, arcX->idx(),  arcX->right());
+			}
+
+			std::cout << "S1" << std::endl;
+			matidx_t xr_prev_mat_idx_pos = mapper_arcsX.number_of_valid_mat_pos(arcX->idx())-1; //TODO: VERY IMPORTNANT: -1 or not?
+			std::cout << "S2" << std::endl;
+			seq_pos_t xr_prev_seq_pos = mapper_arcsX.get_pos_in_seq_new(arcX->idx(), xr_prev_mat_idx_pos);
+			std::cout << "S3" << std::endl;
+			infty_score_t jumpGapCostX = getGapCostBetween(xr_prev_seq_pos, arcX->right(), isA);
+			std::cout << "S4" << std::endl;
+			if (isA) {
+				infty_score_t ix= IAmat(xr_prev_mat_idx_pos,empty_arcY.idx()) + jumpGapCostX;
+				IADmat(arcX->idx(), empty_arcY.idx()) = ix;
+				D(*arcX, empty_arcY) = ix;
+			}
+			else {
+				std::cout << "S5" << std::endl;
+				infty_score_t ix= IBmat(empty_arcY.idx(), xr_prev_mat_idx_pos) + jumpGapCostX;
+				IBDmat(empty_arcY.idx(), arcX->idx()) = ix;
+				D(empty_arcY, *arcX) = ix;
+			}
+			std::cout << "S6" << std::endl;
+		}
+		std::cout << "S7" << std::endl;
+	}
+
+ 	}
     // compute all entries D
     void
     AlignerNN::align_D() {
 	computeGapCosts(true, def_scoring_view);//gap costs A //tocheck:always def_score view!
 	computeGapCosts(false, def_scoring_view);//gap costs B //tocheck:always def_score view!
+
+	// Fill entries of domain insertion deletion i.e. IA with empty B sub-sequence and the opposite
+	compute_IAB_entries_domain(r.startA(), r.endA(), true);
+	compute_IAB_entries_domain(r.startB(), r.endB(), false);
 
 	// for al in r.endA() .. r.startA
 
@@ -801,42 +910,6 @@ namespace LocARNA {
 		    if (trace_debugging_output)	std::cout << "empty left_adjlist(al=)" << al << std::endl;
 		    continue;
 		}
-
-
-		// Fill entries of domain insertion deletion i.e. IA with empty B sub-sequence and the opposite
-
-		Arc empty_arcB = BasePairs__Arc(bpsB.num_bps(), 0, 0);
-		for (BasePairs::LeftAdjList::const_iterator arcA =
-				adjlA.begin(); arcA != adjlA.end(); ++arcA) {
-				scoring->set_closing_arcs(*arcA, empty_arcB);
-				if (trace_debugging_output) {
-					std::cout << "align_D domain insertion arcA:" << *arcA << std::endl;
-					std::cout << "fill_IA_entries: " << al << "," << arcA->right() <<   std::endl;
-					std::cout << "                 arcA:" <<  *arcA  << std::endl;
-				}
-				is_innermost_arcA = true;
-				is_innermost_arcB = true;
-				//compute matrix M
-				//	    stopwatch.start("compM");
-				fill_IA_entries(arcA->idx(), empty_arcB, arcA->right());
-
-				matidx_t ar_prev_mat_idx_pos = mapper_arcsA.number_of_valid_mat_pos(arcA->idx())-1; //TODO: VERY IMPORTNANT: -1 or not?
-
-				seq_pos_t ar_prev_seq_pos = mapper_arcsA.get_pos_in_seq_new(arcA->idx(), ar_prev_mat_idx_pos);
-				infty_score_t jumpGapCostA = getGapCostBetween(ar_prev_seq_pos, arcA->right(), true);
-				infty_score_t ia= IAmat(ar_prev_mat_idx_pos,empty_arcB.idx()) + jumpGapCostA;
-
-				IADmat(arcA->idx(), empty_arcB.idx()) = ia;
-				D(*arcA, empty_arcB) = ia;
-//				std::cout << "     align_D domain insertion set D to ia=" << ia << std::endl;
-//				D(*arcA, empty_arcB) = IAmat(arcA->right()-1, empty_arcB.idx());
-//				fill_D_entry(*arcA, empty_arcB);
-
-				//	    stopwatch.stop("compM");
-
-		}
-
-
 
 	    //	pos_type max_bl = std::min(r.endB(),params->trace_controller.max_col(al)); //tomark: trace_controller
 	    //	pos_type min_bl = std::max(r.startB(),params->trace_controller.min_col(al));
@@ -1002,6 +1075,8 @@ namespace LocARNA {
 		std::cout << "align top level" << std::endl;
 
 		fill_M_entries(BasePairs__Arc(bpsA.num_bps(), 0, seqA.length()+1),BasePairs__Arc(bpsB.num_bps(), 0, seqB.length()+1));
+		std::cout << " align top level M entries done" << std::endl;
+
 	    // tocheck: always use get_startA-1 (not zero) in
 	    // sparsification_mapper and other parts
 	    // stopwatch.stop("align top level");
@@ -1018,7 +1093,8 @@ namespace LocARNA {
 		// << " " << getGapCostBetween( last_valid_seq_pos_B,ps_br, false)
 		// << std::endl;
 	    }
-	    
+		std::cout << "align top done" << std::endl;
+
 	    return M( last_index_A, last_index_B)
 		//toask: where should we care about non_default scoring views
 		+ getGapCostBetween( last_valid_seq_pos_A, ps_ar, true)
@@ -1275,7 +1351,7 @@ namespace LocARNA {
 	assert(! scoring->stacking());
 
 	// --------------------
-	// Case domain insertion deletion
+	// Case domain  deletion
 	if (arcB.idx() == bpsB.num_bps()) {
 			fill_IA_entries(idxA, arcB, ar_seq_pos);
 			matidx_t ar_prev_mat_idx_pos = mapper_arcsA.number_of_valid_mat_pos(idxA)-1; //TODO: VERY IMPORTNANT: -1 or not?
@@ -1285,7 +1361,7 @@ namespace LocARNA {
 			infty_score_t ia= IAmat(ar_prev_mat_idx_pos,arcB.idx()) + jumpGapCostA;
 
 			if ( sv.D(arcA, arcB) == ia ) {
-				if (trace_debugging_output) std::cout << "     trace_D domain insertion" << std::endl;
+				if (trace_debugging_output) std::cout << "     trace_D domain deletion" << std::endl;
 
 				trace_IX(idxA, ar_prev_mat_idx_pos, arcB, true, sv);
 				for ( size_type k = ar_prev_seq_pos + 1; k < ar_seq_pos; k++)
@@ -1306,6 +1382,32 @@ namespace LocARNA {
 	seq_pos_t br_prev_seq_pos = mapper_arcsB.get_pos_in_seq_new(idxB, br_prev_mat_idx_pos);
 	infty_score_t jumpGapCostB = getGapCostBetween(br_prev_seq_pos, br_seq_pos, false);
 
+	// --------------------
+	// Case domain insertion
+	if (arcA.idx() == bpsA.num_bps()) {
+			fill_IB_entries(arcA, idxA, br_seq_pos);
+			matidx_t br_prev_mat_idx_pos = mapper_arcsB.number_of_valid_mat_pos(idxB)-1; //TODO: VERY IMPORTNANT: -1 or not?
+
+			seq_pos_t br_prev_seq_pos = mapper_arcsB.get_pos_in_seq_new(idxB, br_prev_mat_idx_pos);
+			infty_score_t jumpGapCostB = getGapCostBetween(br_prev_seq_pos, br_seq_pos, false);
+			infty_score_t ib= IBmat(arcA.idx(), br_prev_mat_idx_pos) + jumpGapCostB;
+
+			if ( sv.D(arcA, arcB) == ib ) {
+				if (trace_debugging_output) std::cout << "     trace_D domain insertion" << std::endl;
+
+				trace_IX(idxB, br_prev_mat_idx_pos, arcA, false, sv);
+				for ( size_type k = br_prev_seq_pos + 1; k < br_seq_pos; k++)
+					{
+					alignment.append(-1, k);
+					}
+				return;
+			}
+	//				D(*arcA, empty_arcB) = IAmat(arcA->right()-1, empty_arcB.idx());
+	//				fill_D_entry(*arcA, empty_arcB);
+
+			//	    stopwatch.stop("compM");
+
+	}
 	// --------------------
 	// now handle the case that arc match is not stacked
 
@@ -1632,7 +1734,7 @@ namespace LocARNA {
 	const ArcIdxVec& arcsB = mapper_arcsB.valid_arcs_right_adj(idxB, j_index);
 
 	//  domain ins/del
-	//domain insertion
+	//domain deltion
 	for (ArcIdxVec::const_iterator arcAIdx = arcsA.begin();
 	 arcAIdx != arcsA.end();
 	 ++arcAIdx) {
@@ -1676,6 +1778,56 @@ namespace LocARNA {
 
 			trace_D(arcA, empty_arcB, sv);
 			alignment.append(arcA.right(),-1);
+			return;
+		}
+
+
+	}
+
+	//domain insertion
+	for (ArcIdxVec::const_iterator arcBIdx = arcsB.begin();
+	 arcBIdx != arcsB.end();
+	 ++arcBIdx) {
+		const Arc& arcB = bpsB.arc(*arcBIdx);
+		matidx_t  arcB_left_index_before   =
+		mapper_arcsB.first_valid_mat_pos_before(idxB, arcB.left(), bl);
+		seq_pos_t arcB_left_seq_pos_before =
+		mapper_arcsB.get_pos_in_seq_new(idxB, arcB_left_index_before);
+
+		score_t opening_cost_B = 0;
+		if (arcB_left_seq_pos_before < (arcB.left() - 1)) {
+		// implicit base deletion because of sparsification
+		score_t opening_cost_B = sv.scoring()->indel_opening();
+		}
+
+		Arc empty_arcA = BasePairs__Arc(bpsA.num_bps(), 0, 0);
+		sv.scoring()->set_closing_arcs(traceback_closing_arcA, traceback_closing_arcB);
+
+		infty_score_t arc_indel_score_open = getGapCostBetween( arcB_left_seq_pos_before, arcB.left(), false) +
+		sv.D(empty_arcA, arcB) + sv.scoring()->arcDel(arcB, false)
+		 + sv.scoring()->indel_opening_loop();
+
+
+		tainted_infty_score_t domain_ins_score =
+			arc_indel_score_open
+			+ opening_cost_B
+			+ M(i_index, arcB_left_index_before);
+
+		if ( M(i_index, j_index) == domain_ins_score ) {
+
+
+			if (trace_debugging_output) std::cout << "domain ins M"<< arcB   << std::endl;
+
+			trace_M(idxA, i_index, idxB, arcB_left_index_before, top_level, sv);
+
+
+			alignment.add_basepairB(arcB.left(), arcB.right());
+			alignment.append(-1, arcB.left());
+
+			// do the trace below the arc match
+
+			trace_D(empty_arcA, arcB, sv);
+			alignment.append(-1, arcB.right());
 			return;
 		}
 
