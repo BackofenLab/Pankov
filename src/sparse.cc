@@ -63,7 +63,6 @@ struct command_line_parameters : public MainHelper::std_command_line_parameters 
 
     int indel_score_loop; //!< indel extension score
 
-    int indel_score_loop; //!< indel extension score
     
     int indel_opening_score; //!< indel opening score
     
@@ -85,8 +84,6 @@ struct command_line_parameters : public MainHelper::std_command_line_parameters 
     bool opt_normalized; //!< whether to do normalized alignment
     int normalized_L; //!< normalized_L
 
-    double prob_unpaired_in_loop_threshold; //!< threshold for prob_unpaired_in_loop
-    double prob_basepair_in_loop_threshold; //!< threshold for prob_basepait_in_loop
 
 };
 
@@ -332,12 +329,7 @@ main(int argc, char **argv) {
 	return -1;
         }
     */
-    if (clp.opt_subopt) {
-    	std::cerr
-            << "ERROR: suboptimal alignment not supported."
-            <<std::endl;
-        return -1;
-    }
+
 
 
 
@@ -574,7 +566,6 @@ main(int argc, char **argv) {
 	cout <<std::endl 
 	     <<"Base Pair Matches: "<<arc_matches->num_arc_matches() << "." <<std::endl;
 	// cout << "Base Identity: "<<(seq_identity(seqA,seqB)*100)<<endl; 
-    }
 
     // construct sparsification mapper for seqs A,B
     SparsificationMapper mapperA(bpsA, *rna_dataA, clp.prob_unpaired_in_loop_threshold,
