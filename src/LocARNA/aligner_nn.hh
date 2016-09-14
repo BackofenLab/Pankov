@@ -409,6 +409,10 @@ namespace LocARNA {
 	void
     fill_D_entry(const Arc &arcA,const Arc &arcB);
 
+	// Fill entries of domain insertion deletion i.e. IA with empty B sub-sequence and the opposite
+	void
+	compute_IAB_entries_domain(seq_pos_t start, seq_pos_t end, bool isA);
+
 //---------------------------------------------------------------------------------
 
 	/**
