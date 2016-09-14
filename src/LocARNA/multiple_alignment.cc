@@ -16,25 +16,46 @@
 #include <stdlib.h>
 
 namespace LocARNA {
+
+
+    /* NOTE / TODO :
+       reading and writing of clustal-like format and stockholm can be done in a very similar way;
+       only the header line and the tags change!
+    */
     
-    // allowed tags are part of the extended aln and pp file format definitions
-    std::vector<std::string>
-    initial_annotation_tags() {
-	std::vector<std::string> as;
-	as.resize(3);
+    MultipleAlignment::annotation_tags_t
+    MultipleAlignment::annotation_tags;
+    
+    void
+    MultipleAlignment::init_annotation_tags() {
+        annotation_tags.resize(FormatType::size());
 	
-	as[MultipleAlignment::AnnoType::structure]="S";
-	as[MultipleAlignment::AnnoType::fixed_structure]="FS";
-	as[MultipleAlignment::AnnoType::anchors]="A";
-	
-	return as;
+        // pp tags are part of the extended aln and pp file format definitions
+        // init tags for all formats with pp tags
+	for (size_t i=0; i<FormatType::size(); i++) {
+            annotation_tags[i].resize(AnnoType::size());
+            
+            annotation_tags[i][AnnoType::structure]="S";
+            annotation_tags[i][AnnoType::fixed_structure]="FS";
+            annotation_tags[i][AnnoType::anchors]="A";
+            annotation_tags[i][AnnoType::consensus_structure]="S";
+        }
+        
+        // stockholm tags are part of the (extended) stockholm files
+	// ovwerwrite tags for stockholm format
+        annotation_tags[FormatType::STOCKHOLM].resize(AnnoType::size());
+
+        annotation_tags[FormatType::STOCKHOLM][AnnoType::structure]="=GC cS";
+	annotation_tags[FormatType::STOCKHOLM][AnnoType::fixed_structure]="=GC cFS";
+	annotation_tags[FormatType::STOCKHOLM][AnnoType::anchors]="=GC cA";
+	annotation_tags[FormatType::STOCKHOLM][AnnoType::consensus_structure]="=GC SS_cons";
     }
-    const std::vector<std::string> MultipleAlignment::annotation_tags = initial_annotation_tags();
     
     MultipleAlignment::MultipleAlignment() 
 	: alig_(),
 	  annotations_(),
 	  name2idx_() {
+        init_annotation_tags();
     }
     
     MultipleAlignment::MultipleAlignment(std::istream &in, FormatType::type format)
@@ -46,11 +67,17 @@ namespace LocARNA {
 	    throw(failure("Cannot read input stream."));
 	}
 
+        init_annotation_tags();
+
 	if (format==FormatType::FASTA) {
-	    read_aln_fasta(in);
+	    read_fasta(in);
 	} else if (format==FormatType::CLUSTAL) {
-	    read_aln_clustalw(in);
-	} else {
+	    read_clustalw(in);
+	} else if (format==FormatType::PP) {
+	    read_clustallike(in,format);
+	} else if (format==FormatType::STOCKHOLM) {
+            read_stockholm(in);
+        } else {
 	    throw failure("Unknown format.");
 	}
 	
@@ -68,16 +95,19 @@ namespace LocARNA {
 	    if (!in.is_open()) {
 		throw(std::ifstream::failure("Cannot open file "+filename+" for reading."));
 	    }
+            
+            init_annotation_tags();
 	
 	    if (format==FormatType::FASTA) {
-		read_aln_fasta(in);
+		read_fasta(in);
 	    } else if (format == FormatType::CLUSTAL) {
-		read_aln_clustalw(in);
-	    } else {
+		read_clustalw(in);
+	    } else if (format == FormatType::STOCKHOLM) {
+                read_stockholm(in);
+            } else {
 		throw failure("Unknown format.");
 	    }
 
-	
 	    in.close();
 	} catch (std::ifstream::failure &e) {
 	    throw failure("Cannot construct multiple alignment: "+(std::string)e.what());
@@ -91,23 +121,38 @@ namespace LocARNA {
 	: alig_(),
 	  annotations_(),
 	  name2idx_() {
+
+        init_annotation_tags();
 	
 	alig_.push_back(SeqEntry(name,sequence));
     	
     	create_name2idx_map();
     }
 
-    MultipleAlignment::MultipleAlignment(const std::string &nameA,
-					 const std::string &nameB, 
+    MultipleAlignment::MultipleAlignment(const std::string &in_nameA,
+					 const std::string &in_nameB, 
 					 const std::string &aliA,
 					 const std::string &aliB)
 	: alig_(),
 	  annotations_(),
 	  name2idx_() {
 	
+        std::string nameA=in_nameA;
+        std::string nameB=in_nameB;
+        
+        //make names unique
+        if (nameA==nameB) {
+            nameA="A."+nameA;
+            nameB="B."+nameA;
+        }
+        
+
+        
 	if (aliA.length() != aliB.length()) {
     	    throw failure("Alignment strings of unequal length."); 
     	}
+
+        init_annotation_tags();
 	
     	alig_.push_back(SeqEntry(nameA,aliA));
     	alig_.push_back(SeqEntry(nameB,aliB));
@@ -125,10 +170,12 @@ namespace LocARNA {
 		 alignment.seqA().annotation(AnnoType::anchors),
 		 alignment.seqB().annotation(AnnoType::anchors));
 	
+        init_annotation_tags();
+
 	if (! anchors.duplicate_names() ) {
 	    set_annotation(AnnoType::anchors, anchors);
 	}
-
+        
 	init(alignment.alignment_edges(only_local),
 	     alignment.seqA(),
 	     alignment.seqB(),
@@ -142,6 +189,8 @@ namespace LocARNA {
 	:alig_(),
 	 annotations_(),
 	 name2idx_() {
+
+        init_annotation_tags();
 
 	SequenceAnnotation 
 	    anchors(edges,
@@ -161,8 +210,7 @@ namespace LocARNA {
 			    const Sequence &seqA,
 			    const Sequence &seqB,
 			    bool special_gap_symbols) {
-	
-	std::vector<std::string> aliA(seqA.num_of_rows(),"");
+        std::vector<std::string> aliA(seqA.num_of_rows(),"");
 	std::vector<std::string> aliB(seqB.num_of_rows(),"");
     
 	std::vector<int>::size_type alisize = edges.size();
@@ -193,12 +241,27 @@ namespace LocARNA {
 		}
 	    }
 	}
-    
-	for (size_type k=0; k<seqA.num_of_rows();k++) {
-	    alig_.push_back(SeqEntry(seqA.seqentry(k).name(),aliA[k]));
+
+        // check for name conflicts
+        bool name_clash=false;
+        for (size_type k=0; k<seqA.num_of_rows();k++) {
+            if (seqB.contains(seqA.seqentry(k).name())) {
+                name_clash=true;
+            }
+        }
+
+	// construct sequences from seqA
+        for (size_type k=0; k<seqA.num_of_rows();k++) {
+            std::string name=seqA.seqentry(k).name();
+            if (name_clash) {name="A."+name;}
+            alig_.push_back(SeqEntry(name,aliA[k]));
 	}
-	for (size_type k=0; k<seqB.num_of_rows();k++) {
-	    alig_.push_back(SeqEntry(seqB.seqentry(k).name(),aliB[k]));
+
+        // construct sequences from seqB
+        for (size_type k=0; k<seqB.num_of_rows();k++) {
+	    std::string name=seqB.seqentry(k).name();
+	    if (name_clash) {name="B."+name;}
+            alig_.push_back(SeqEntry(name,aliB[k]));
 	}
 
     	create_name2idx_map();
@@ -222,7 +285,27 @@ namespace LocARNA {
     }
 
     void
-    MultipleAlignment::read_aln_clustalw(std::istream &in) {
+    MultipleAlignment::read_stockholm(std::istream &in) {
+        // require STOCKHOLM header 
+        std::string format_header="# STOCKHOLM 1.";
+        std::string line;
+        get_nonempty_line(in,line);
+        if (!has_prefix(line,format_header))  {
+            // complain
+            throw wrong_format_failure();
+        }
+        
+        read_clustallike(in,FormatType::STOCKHOLM);
+    }
+
+    void
+    MultipleAlignment::read_clustalw(std::istream &in) {
+        read_clustallike(in,FormatType::CLUSTAL);
+    }
+
+    void
+    MultipleAlignment::read_clustallike(std::istream &in,
+                            FormatType::type format) {
 
 	std::string name;
 	std::string seqstr;
@@ -241,18 +324,25 @@ namespace LocARNA {
 	
 	get_nonempty_line(in,line);
 	
-	// accept and ignore a header line starting with CLUSTAL
-	if (has_prefix(line,"CLUSTAL"))  {
-	    get_nonempty_line(in,line);
-	}
+        std::string format_header;
+        if (format == FormatType::CLUSTAL) {
+            // accept and ignore CLUSTAL header line (this is optional!)
+            if (has_prefix(line,"CLUSTAL"))  {
+                get_nonempty_line(in,line);
+            }
+        }
 	
-	const std::string anchors_tag   = "#"+annotation_tags[AnnoType::anchors];
-	const std::string structure_tag = "#"+annotation_tags[AnnoType::structure];
-	const std::string fixed_structure_tag = "#"+annotation_tags[AnnoType::fixed_structure];
+	const std::string anchors_tag   = "#"+annotation_tags[format][AnnoType::anchors];
+	const std::string structure_tag = "#"+annotation_tags[format][AnnoType::structure];
+	const std::string fixed_structure_tag = "#"+annotation_tags[format][AnnoType::fixed_structure];
 	
 	do {
+            // for STOCKHOLM end at '//', which allows multiple entries in one stream
+            if (format == FormatType::STOCKHOLM && line=="//") {
+                break;
+            }
 	    if (line[0]=='#') {
-		if (has_prefix(line,"#END")) { // recognize END for use in pp files
+		if (format==FormatType::PP && has_prefix(line,"#END")) { // recognize END in pp files
 		    // section end
 		    break;
 		}
@@ -276,27 +366,36 @@ namespace LocARNA {
 		    }
 		    
 		    anchors[idx-1] += astr;
-		} else if (has_prefix(line,structure_tag) 
-			   || has_prefix(line,fixed_structure_tag)) {
-		    std::istringstream in(line);
-		    std::string tag;
-		    std::string str;
-		    in >> tag >> str;
+		} else if (has_prefix(line,structure_tag)) {
+                    
+                    std::istringstream in(line.substr(structure_tag.length()));
+		    
+                    std::string str;
+		    in >> str;
 		    
 		    if ( in.fail() ) {
 			throw syntax_error_failure("Invalid tag with structure prefix "
 						   +structure_tag+".");
 		    }
+                    structure_string += str;
+                                        
+                } else if (has_prefix(line,fixed_structure_tag)) {
 		    
-		    if (tag==structure_tag) {
-			structure_string += str;
-		    } else if (tag==fixed_structure_tag) {
-		    	fixed_structure_string += str;
-		    } else {
-			throw syntax_error_failure("Unknown tag with structure prefix "
-						   +structure_tag+".");
+                    std::istringstream in(line.substr(fixed_structure_tag.length()));
+		    
+                    std::string str;
+		    in >> str;
+		    
+		    if ( in.fail() ) {
+			throw syntax_error_failure("Invalid tag with structure prefix "
+						   +fixed_structure_tag+".");
 		    }
-		}
+                    fixed_structure_string += str;
+                    
+		} else {
+                    // ignore unknown tags
+                }
+                
 	    } else {
 	    	std::istringstream in(line);
 		in >> name;
@@ -315,10 +414,10 @@ namespace LocARNA {
 		}
 		seq_map[name] += seqstr;
 	    }
-	    // stop when reading a "CLUSTAL" header line again, this
+	    // if format is CLUSTAL, stop when reading a "CLUSTAL" header line again, this
 	    // allows reading multiple clustal entries from one file
 	} while (get_nonempty_line(in,line) 
-		 && !has_prefix(line,"CLUSTAL"));
+		 && !(format==FormatType::CLUSTAL && has_prefix(line,"CLUSTAL")));
     
 	// store the name/sequence pairs in the vector alig
 	for (std::vector<std::string>::const_iterator it=names.begin(); it!=names.end(); ++it) {
@@ -344,6 +443,7 @@ namespace LocARNA {
 	// check and set structure string
 	if (!structure_string.empty()) {
 	    if (structure_string.length() != length()) {
+                //std::cerr << "\""<<structure_string<<"\""<<std::endl;
 		throw syntax_error_failure("Structure annotation of wrong length.");
 	    }
 	    try {
@@ -368,11 +468,10 @@ namespace LocARNA {
 					   +f.what());
 	    }
 	}
-	
     }
     
     void
-    MultipleAlignment::read_aln_fasta(std::istream &in) {
+    MultipleAlignment::read_fasta(std::istream &in) {
 	std::string name;
 	std::string description;
 	
@@ -932,12 +1031,13 @@ namespace LocARNA {
 
     std::ostream &
     MultipleAlignment::write(std::ostream &out,
-			     size_type start, 
-			     size_type end) const
+                                 size_type start, 
+                                 size_type end,
+                                 FormatType::type format) const
     {
 	assert(1<=start);
 	assert(end+1>=start);
-
+        
         size_t max_name_length=0;
         for( std::vector<SeqEntry>::const_iterator it=alig_.begin();
              alig_.end()!=it; ++it) {
@@ -945,12 +1045,6 @@ namespace LocARNA {
         }
         size_t namewidth = std::max((size_t)18,max_name_length);
         
-	std::string structure_string = 
-	    annotation(AnnoType::structure).single_string();
-	
-	std::string fixed_structure_string = 
-	    annotation(AnnoType::fixed_structure).single_string();
-	
 	for (size_type i=0; i<alig_.size(); i++) {
 	    const std::string seq = alig_[i].seq().str();
 	    assert(end <= seq.length()); 
@@ -964,7 +1058,7 @@ namespace LocARNA {
 	if (has_annotation(AnnoType::anchors)) {
 	    	
 	    for(size_t i=0; i<annotation(AnnoType::anchors).name_length(); i++) {
-		const std::string anchors_tag   = "#"+annotation_tags[AnnoType::anchors];
+		const std::string anchors_tag   = "#"+annotation_tags[format][AnnoType::anchors];
 		std::ostringstream name;
 		name << anchors_tag << (i+1);
 		
@@ -978,7 +1072,11 @@ namespace LocARNA {
 	}
 	
 	if (has_annotation(AnnoType::structure)) {
-	    const std::string structure_tag   = "#"+annotation_tags[AnnoType::structure];
+	    const std::string structure_tag   = "#"+annotation_tags[format][AnnoType::structure];
+
+            std::string structure_string = 
+                annotation(AnnoType::structure).single_string();
+            
 	    write_name_sequence_line(out,
 				     structure_tag,
 				     structure_string.substr(start-1,end-start+1),
@@ -986,32 +1084,59 @@ namespace LocARNA {
 	}
 
 	if (has_annotation(AnnoType::fixed_structure)) {
-	    const std::string structure_tag   = "#"+annotation_tags[AnnoType::fixed_structure];
-	    write_name_sequence_line(out,
+	    const std::string structure_tag   = "#"+annotation_tags[format][AnnoType::fixed_structure];
+
+            std::string fixed_structure_string = 
+                annotation(AnnoType::fixed_structure).single_string();
+            
+            write_name_sequence_line(out,
 				     structure_tag,
 				     fixed_structure_string.substr(start-1,end-start+1),
                                      namewidth);
 	}
 	
+        if (has_annotation(AnnoType::consensus_structure)) {
+            const std::string structure_tag   = "#"+annotation_tags[format][AnnoType::consensus_structure];
+
+            std::string structure_string = 
+                annotation(AnnoType::consensus_structure).single_string();
+            
+	    write_name_sequence_line(out,
+				     structure_tag,
+				     structure_string.substr(start-1,end-start+1),
+                                     namewidth);
+	}
+        
 	return out;
     }
 
     std::ostream &
-    MultipleAlignment::write(std::ostream &out) const {
-	return
-	    write(out,1,length());
-    }
-
-    std::ostream &
-    MultipleAlignment::write(std::ostream &out,size_t width) const {
-	size_t start=1;
+    MultipleAlignment::write(std::ostream &out,
+                                 size_t width,
+                                 FormatType::type format
+                                 ) const {
+        assert(format == FormatType::CLUSTAL || format == FormatType::STOCKHOLM);
+        size_t start=1;
 	do {
 	    size_t end = std::min(length(),start+width-1);
-	    write(out,start,end);
+	    write(out,start,end,format);
 	    start=end+1;
 	} while (start <= length() && out << std::endl);
-	
+
+        // write end marker if writing STOCKHOLM format
+        if ( format == FormatType::STOCKHOLM ) {
+            out << "//" <<std::endl;
+        }
+
 	return out;
+    }
+
+    std::ostream &
+    MultipleAlignment::write(std::ostream &out, 
+                                 FormatType::type format) const {
+        assert(format == FormatType::CLUSTAL || format == FormatType::STOCKHOLM);
+        return
+            write(out,length(),format);
     }
     
     void 
@@ -1062,7 +1187,7 @@ namespace LocARNA {
 
     std::ostream &
     operator << (std::ostream &out, const MultipleAlignment &ma) {
-	ma.write(out);
+	ma.write(out,MultipleAlignment::FormatType::CLUSTAL);
 	return out;
     }
     

@@ -18,12 +18,11 @@
 #include "ext_rna_data.hh"
 #include "aux.hh"
 
-extern "C"
-{
-#include <ViennaRNA/fold_vars.h>
-#include <ViennaRNA/utils.h>
-#include <ViennaRNA/PS_dot.h>
-#include <ViennaRNA/fold.h>
+extern "C" {
+#   include <ViennaRNA/fold_vars.h>
+#   include <ViennaRNA/utils.h>
+#   include <ViennaRNA/PS_dot.h>
+#   include <ViennaRNA/fold.h>
     int    PS_rna_plot(char *string, char *structure, char *file);
     int    PS_rna_plot_a(char *string, char *structure, char *file, char *pre, char *post);
     float  fold(const char *sequence, char *structure);
@@ -374,7 +373,7 @@ namespace LocARNA {
 	void 		MapToPS(const std::string& sequenceA, const std::string& sequenceB, PatternPairMap& myMap, const std::string& file1, const std::string& file2);
 
 	//! calculates the best chain of EPMs, the LCS-EPM
-	void		calculateLCSEPM();
+	void		calculateLCSEPM(bool quiet);
     
         //! get anchor annotation
         std::pair<SequenceAnnotation,SequenceAnnotation>
@@ -409,7 +408,7 @@ namespace LocARNA {
 
 
 	void    preProcessing			();
-	void    calculateHoles3			();
+	void    calculateHoles3			(bool quiet);
 	void    calculatePatternBoundaries	(PatternPair* myPair);
 	void 	calculateTraceback2		(const int i,const int j,const int k,const int l,std::vector < std::vector<int> > holeVec);
 	int 	D_rec2				(const int& i,const  int& j,const int& k,const int& l,std::vector < std::vector<int> >& D_h,const bool debug);

@@ -1,5 +1,5 @@
-/************************************************************/
-/**
+/************************************************************
+ *
  * \file locarna_rnafold_pp.cc
  * \brief Compute and write base pair probabilities in pp-format.
  *
@@ -10,13 +10,10 @@
  * This program is part of the LocARNA package. It is intended for
  * computing pair probabilities of the input sequences.
  *
- * Reads sequence in fasta from cin and writes pp-files to cout
+ * Reads sequence in fasta or clustalw from cin and writes pp-files to
+ * cout or file
  *
- * command line argument --TEST provides a way to test for linking to
- * the ViennaLib. (This should be eventually replaced by a less
- * idiosyncratic mechanism.)
- */
-/************************************************************/
+ ************************************************************/
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -133,7 +130,7 @@ option_def my_options[] = {
     {"p-unpaired-in-loop",0,0,O_ARG_DOUBLE,&clp.prob_unpaired_in_loop_threshold,"0.00001","threshold","Threshold for prob_unpaired_in_loop"},
     {"p-basepair-in-loop",0,0,O_ARG_DOUBLE,&clp.prob_basepair_in_loop_threshold,"0.0001","threshold","Threshold for prob_basepair_in_loop"}, //todo: is the default threshold value reasonable?
     {"output",'o',0,O_ARG_STRING,&clp.output_file,"","filename","Output file"},
-    {"force-alifold",0,&clp.force_alifold,O_NO_ARG,0,O_NODEFAULT,"","Force alifold for single sequnces"},
+    {"force-alifold",0,&clp.force_alifold,O_NO_ARG,0,O_NODEFAULT,"","Force alifold for single seqeunces"},
     {"",0,0,O_ARG_STRING,&clp.input_file,"-","filename","Input file"},
     {"",0,0,0,0,O_NODEFAULT,"",""}
 };

@@ -20,9 +20,9 @@
 #include "LocARNA/global_stopwatch.hh"
 
 extern "C" {
-#  include <ViennaRNA/energy_const.h> // import TURN
+#   include <ViennaRNA/energy_const.h> // import TURN
+#   include <ViennaRNA/MEA.h>
 }
-
 
 namespace LocARNA {
 
@@ -66,7 +66,6 @@ namespace LocARNA {
 	if (max_bps_length_ratio > 0) {
 	    pimpl_->drop_worst_bps(max_bps_length_ratio*pimpl_->sequence_.length());
 	}
-
     }
     
     // do almost nothing
@@ -223,7 +222,6 @@ namespace LocARNA {
 	delete ext_pimpl_;
     }
 
-
     bool
     RnaData::read_autodetect(const std::string &filename,
 			     bool stacking) {
@@ -249,7 +247,6 @@ namespace LocARNA {
 		failed=true;
 	    }
 	}
-
 
 	// try pp 2.0
 	if (failed) {
@@ -303,6 +300,42 @@ namespace LocARNA {
 	    // if (failed) std::cerr << "  ... did not succeed."<<std::endl;
 	    // else std::cerr << "  ... success."<<std::endl;
 	}
+        
+        // try stockholm format
+        if (failed) {
+            sequence_only=true;
+	    failed=false;
+	    try {
+		// std::cerr << "Try reading stockholm "<<filename<<" ..."<<std::endl;
+		MultipleAlignment ma(filename, MultipleAlignment::FormatType::STOCKHOLM);
+                
+		pimpl_->sequence_ = ma;
+	    	// even if reading does not fail, we still want to
+		// make sure that the result is reasonable. Otherwise,
+		// we assume that the file is in a different format.
+		if (!pimpl_->sequence_.is_proper() || pimpl_->sequence_.empty() ) {
+		    failed=true;
+		}
+
+                // handle potential fixed structure in MA
+		if (!failed) {
+                    typedef MultipleAlignment::AnnoType TA;
+
+		    if (ma.has_annotation(TA::fixed_structure)) {
+			init_from_fixed_structure(ma.annotation(TA::fixed_structure),
+						  stacking);
+                        sequence_only=false;
+		    }
+		}
+
+            } catch (wrong_format_failure &f) {
+                failed=true;
+            }catch (syntax_error_failure &f) {
+		throw failure((std::string)"RnaData: Cannot read input data from stockholm file.\n\t"+f.what());
+	    } catch (failure &f) {
+		failed=true;
+	    }
+        }
 
 	// try clustal format
 	if (failed) {
@@ -322,10 +355,10 @@ namespace LocARNA {
 		
 		// handle potential fixed structure in MA
 		if (!failed) {
-		    typedef MultipleAlignment::AnnoType AT;
-		    
-		    if (ma.has_annotation(AT::fixed_structure)) {
-			init_from_fixed_structure(ma.annotation(AT::fixed_structure),
+                    typedef MultipleAlignment::AnnoType TA;
+
+		    if (ma.has_annotation(TA::fixed_structure)) {
+			init_from_fixed_structure(ma.annotation(TA::fixed_structure),
 						  stacking);
 			sequence_only=false;
 		    }
@@ -364,19 +397,20 @@ namespace LocARNA {
 	assert(structure.length() == sequence_.length());
 	RnaStructure rna_structure(structure.single_string());
 	
-	p_bpcut_=1.0;
+	p_bpcut_=0.99; // this has to be less than 1.0 (to ensure p>bp_cut_)
 	
 	for (RnaStructure::const_iterator it=rna_structure.begin();
 	     rna_structure.end() != it; ++it) {
 	    arc_probs_(it->first,it->second)=1.0;
-	
+            
 	    if (stacking) {
 		if (rna_structure.contains(RnaStructure::bp_t(it->first+1,it->second-1))) {
 		    arc_2_probs_(it->first,it->second)=1.0;
 		}
 	    }
 	}
-	has_stacking_=stacking;
+        
+        has_stacking_=stacking;
     }
 
     void
@@ -1004,7 +1038,7 @@ namespace LocARNA {
     std::istream &
     RnaDataImpl::read_pp_sequence(std::istream &in) {
 	
-	sequence_ = MultipleAlignment(in,MultipleAlignment::FormatType::CLUSTAL);
+	sequence_ = MultipleAlignment(in,MultipleAlignment::FormatType::PP);
 	sequence_.normalize_rna_symbols();
 	
 	return in;
@@ -1706,22 +1740,71 @@ namespace LocARNA {
 
 		vec.push_back(kv_t::kvpair_t(key_t(it->first,it2->first), it2->second));
 	    }
-		double keep =  ratio * ((double)(it->first.second)- (double)(it->first.first) + 1) ;
-		if (vec.size()> keep)
-		{
-			std::make_heap(vec.begin(),vec.end(),kv_t::comp);
-			while(vec.size()> keep ) {
-				const key_t &key = vec.front().first;
-				arc_in_loop_probs_.ref(key.first.first,key.first.second).reset(key.second.first,key.second.second);
-
-				std::pop_heap(vec.begin(),vec.end(),kv_t::comp);
-				vec.pop_back();
-			}
-		}
-
+            double keep =  ratio * ((double)(it->first.second)- (double)(it->first.first) + 1) ;
+            if (vec.size()> keep) {
+                std::make_heap(vec.begin(),vec.end(),kv_t::comp);
+                while(vec.size()> keep ) {
+                    const key_t &key = vec.front().first;
+                    arc_in_loop_probs_.ref(key.first.first,
+                                           key.first.second).reset(key.second.first,
+                                                                   key.second.second);
+                    
+                    std::pop_heap(vec.begin(),vec.end(),kv_t::comp);
+                    vec.pop_back();
+                }
+            }
 	}
+    }
 
+    vrna_plist_t *
+    RnaData::plist() const {
+        std::vector<vrna_plist_t> plist;
+        size_type len = length();
+        for(size_t i=1; i<=len; ++i) {
+            for(size_t j=1; j<=len; ++j) {
+                double p=arc_prob(i,j);
+                if (p>0) {
+                    vrna_plist_t x;
+                    x.i=i;
+                    x.j=j;
+                    x.p=p;
+                    x.type=0;
+                    plist.push_back(x);
+                }
+            }
+        }
+        
+        // construct Vienna RNA / C - compatible array
+        vrna_plist_t * c_plist = new vrna_plist_t[plist.size()+1];
+        // and copy contents of the vecctor to this array
+        copy(plist.begin(), plist.end(), c_plist);
+        // mark end of list
+        c_plist[plist.size()].i=0;
+        c_plist[plist.size()].j=0;
+        c_plist[plist.size()].p=0;
+        c_plist[plist.size()].type=0;
+        
+        return c_plist;
+    }
 
+    std::string
+    RnaData::mea_structure(double gamma) const {
+        vrna_plist_t *pl = plist();
+        
+        char *c_structure = new char[length()+1];
+        for (size_t i=0; i<length(); ++i) {c_structure[i]='.';}
+        c_structure[length()]=0;
+        
+        // call RNAlib's mea function
+        //float mea = 
+        MEA(pl,c_structure,gamma);
+        
+        std::string structure(c_structure);
+        
+        delete [] c_structure;
+        delete [] pl;
+        
+        return structure;
     }
 
 } // end namespace LocARNA

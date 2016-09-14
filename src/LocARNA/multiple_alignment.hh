@@ -38,7 +38,10 @@ namespace LocARNA {
  * Supports traversal of name/sequence pairs. The sequence entries support
  * mapping from columns to positions and back.
  *
- * Names are unique in a multiple alignment object.
+ * Names are unique in a multiple alignment object. 
+ *
+ * @todo constructors ensure name uniqueness; if constructing as
+ * alignment of alignments, names are made unique if needed.
  *
  * Sequences positions and column indices are 1..len.
  *
@@ -70,27 +73,57 @@ public:
     struct FormatType {
 	//! inner type
 	enum type {
-	    CLUSTAL, //!< (extended) clustal file format
-	    FASTA  //!< fasta file format
+            STOCKHOLM, //!< stockholm file format
+            PP,        //!< pp format
+            CLUSTAL,   //!< (extended) clustal file format
+            FASTA      //!< fasta file format
 	};
+        
+        //!@brief size of enum
+        static size_t
+        size() {return 4;}
     };
-	
 
     //! @brief type of sequence annotation.
     //! enumerates legal annotation types
     struct AnnoType {
 	//! inner type
 	enum type {
-	    structure,       //!< structure annotation (often, constraint)
-	    fixed_structure, //!< structure annotation (a single structure)
-	    anchors          //!< anchor annotation (for anchor constraints)
+            //! consensus structure annotation (consensus structure)
+            consensus_structure,
+            //! structure annotation (often, constraint; allowed are
+            //! Vienna-package structure constraints)
+            structure,
+            //! structure annotation (a single structure; used as fixed
+            //! structure constraint)
+	    fixed_structure,
+            //! anchor annotation (anchor constraints)
+	    anchors
 	};
+        
+        //!@brief size of enum
+        static size_t
+        size() {return 4;}
     };
     
 private:
     //! prefix strings for annotations (shall be prefix unique)
-    //! (no one outside of MultipleAlignment should have to know about this!)
-    static const std::vector<std::string> annotation_tags;
+    //! (no class outside of MultipleAlignment should have to know about this!)
+    //!
+    //! This is indexed by FormatType and AnnoType.
+    typedef std::vector<
+    std::vector<std::string> 
+    > annotation_tags_t;
+    
+    static 
+    annotation_tags_t annotation_tags;
+    
+    //! initialize annotation tags
+    static
+    void
+    init_annotation_tags();
+
+
 public:
     //! @brief number of annotation types
     //! @return number of annotation types
@@ -233,10 +266,8 @@ public:
 	//! @brief write access to seq
 	void
 	set_seq(const string1 &seq) {seq_=seq;}
-
-
     };
-
+    
     /**
      * @brief read only proxy class representing a column of the alignment 
      *
@@ -340,6 +371,29 @@ private:
     void
     create_name2idx_map();
 
+
+    /**
+     * @brief Read alignment from input stream; helper for uniform
+     * reading of CLUSTALW, PP and STOCKHOLM
+     *
+     * @param in input stream
+     * @param format format type of input (CLUSTAL, PP, or STOCKHOLM)
+     * @note overwrites/clears existing data
+     */
+    void
+    read_clustallike(std::istream &in, FormatType::type format);
+
+    /**
+     * @brief Read alignment from input stream, expect stockholm format.
+     *
+     * @param in input stream
+     * @note overwrites/clears existing data
+     *
+     * @todo implement
+     */
+    void
+    read_stockholm(std::istream &in);
+
     /**
      * @brief Read alignment from input stream, expect clustalw-like format.
      *
@@ -352,7 +406,7 @@ private:
      * @note overwrites/clears existing data     
      */
     void
-    read_aln_clustalw(std::istream &in);
+    read_clustalw(std::istream &in);
 
     /**
      * @brief Read alignment from input stream, expect fasta format.
@@ -368,12 +422,12 @@ private:
      * @note The order of sequences in the stream is preserved.
      * @note overwrites/clears existing data
      *
-     * @todo read_aln_fasta() currently does not read anchor
+     * @todo read_fasta() currently does not read anchor
      * constraints and structure. Should it? If yes, likely using
      * special fa headers >#A, >#S.
      */
     void
-    read_aln_fasta(std::istream &in);
+    read_fasta(std::istream &in);
     
 public:
     
@@ -387,7 +441,7 @@ public:
      * @brief Construct from file
      *
      * @param file name of input file
-     * @param format file format (CLUSTAL or FASTA) 
+     * @param format file format (@see FormatType) 
      * @throw failure on read problems
      * @see MultipleAlignment(std::istream &in)
     */
@@ -397,7 +451,7 @@ public:
      * @brief Construct from stream
      *
      * @param in input stream with alignment in clustalW-like format
-     * @param format file format (CLUSTAL or FASTA) 
+     * @param format file format (@see FormatType) 
      * @throw failure on read errors
     */
     MultipleAlignment(std::istream &in, FormatType::type format=FormatType::CLUSTAL);
@@ -428,15 +482,18 @@ public:
      * @brief Construct from Alignment object
      * @param alignment object of type Alignment
      * @param only_local if true, construct only local alignment
-     * @param special_gap_symbols if true, use special distinct gap symbols for gaps due to loop deletion '_' or sparsification '~'
+     * @param special_gap_symbols if true, use special distinct gap symbols
+     *        for gaps due to loop deletion '_' or sparsification '~'
      *
-     * Automatically computes a consensus anchor string if anchors are
+     * @note Automatically computes a consensus anchor string if anchors are
      * available. Consensus anchors containing duplicate names are cleared.
      * Does not compute some kind of consensus structure,
      * even if structure annotation of sequences A and B in Alignment
      * is available.
      */
-    MultipleAlignment(const Alignment &alignment, bool only_local=false, bool special_gap_symbols=false);
+    MultipleAlignment(const Alignment &alignment,
+                      bool only_local=false,
+                      bool special_gap_symbols=false);
     
     /**
      * @brief Construct from alignment edges and sequences
@@ -444,7 +501,7 @@ public:
      * @param seqA sequence A
      * @param seqB sequence B
      *
-     * Automatically computes a consensus anchor string if anchors are
+     * @note Automatically computes a consensus anchor string if anchors are
      * available. Consensus anchors containing duplicate names are
      * cleared. Does not compute some kind of consensus structure,
      * even if structure annotation of sequences A and B is available.
@@ -771,24 +828,32 @@ public:
      * @brief Write alignment to stream
      *
      * @param out output stream
+     * @param format alignment format; only CLUSTAL or STOCKHOLM; default: CLUSTAL (@see FormatType)
+     *
      * @return output stream
      *
-     * Writes one line "<name> <seq>" for each sequence.
+     * Writes one line "<name> <seq>" for each sequence; moereover, writes annotations.
+     *
+     * @note does not write format header
      */
     std::ostream &
-    write(std::ostream &out) const;
+    write(std::ostream &out, FormatType::type format=MultipleAlignment::FormatType::CLUSTAL) const;
 
     /**
-     * @brief Write alignment to stream
+     * @brief Write alignment to stream (wrapped)
      *
      * @param out output stream
      * @param width output stream
+     * @param format alignment format; only CLUSTAL or STOCKHOLM; default: CLUSTAL (@see FormatType)
+     *
      * @return output stream
      *
      * Writes lines "<name> <seq>" per sequence, wraps lines at width
+     *
+     * @note: do not write format header
      */
     std::ostream &
-    write(std::ostream &out, size_t width) const;
+    write(std::ostream &out, size_t width, FormatType::type format=MultipleAlignment::FormatType::CLUSTAL) const;
     
     /**
      * @brief Write formatted line of name and sequence
@@ -799,6 +864,7 @@ public:
      * @param out output stream
      * @param name name string
      * @param sequence sequence string
+     *
      * @return output stream
      */
     std::ostream &
@@ -810,16 +876,21 @@ public:
     /**
      * @brief Write sub-alignment to stream 
      *
-     * Write from position start to position end to output stream
-     * out; write lines "<name> <seq>"
+     * Write from position start to position end to output stream out;
+     * write lines "<name> <seq>"
      *
      * @param out output stream
      * @param start start column (1-based)
      * @param end end column (1-based)
+     * @param format alignment format; default: CLUSTAL (@see FormatType)
+     *
      * @return output stream
      */
     std::ostream &
-    write(std::ostream &out, size_type start, size_type end) const;
+    write(std::ostream &out,
+          size_type start, 
+          size_type end,
+          FormatType::type format=MultipleAlignment::FormatType::CLUSTAL) const;
     
     /**
      * @brief check character constraints

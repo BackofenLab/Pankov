@@ -2,7 +2,7 @@ dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([LocARNA], [1.8.9], [will@informatik.uni-freiburg.de], [locarna],
+AC_INIT([LocARNA], [1.8.12-pre], [will@informatik.uni-freiburg.de], [locarna],
         [http://www.bioinf.uni-freiburg.de/Software/LocARNA/])
 
 dnl special dir for aux config files 
@@ -10,7 +10,7 @@ AC_CONFIG_AUX_DIR(config)
 
 dnl Define here to keep all version information in one place.
 AC_SUBST([SO_VERSION], [1:0:0])
-AC_SUBST([API_VERSION], [1.4])
+AC_SUBST([API_VERSION], [1.5])
 
 
 dnl Package meta information
@@ -56,6 +56,9 @@ AC_PROG_CPP
 
 AC_LANG_CPLUSPLUS
 
+dnl uncomment to require c++11
+dnl AX_CXX_COMPILE_STDCXX_11
+
 AC_CHECK_PROGS([PERL],[perl])
 
 dnl Variable settings for generation of man pages via help2man --
@@ -94,7 +97,7 @@ DX_XML_FEATURE(OFF)
 DX_PDF_FEATURE(OFF)
 DX_PS_FEATURE(OFF)
 
-DX_INIT_DOXYGEN($PACKAGE_NAME, ["doxygen.cfg"], ["Doc"])
+DX_INIT_DOXYGEN($PACKAGE_NAME, ["Doc/doxygen.cfg"], ["Doc"])
 dnl ----------------------------------------
 
 
@@ -138,16 +141,9 @@ AS_IF([test "$PKG_CONFIG_AVAILABLE" = "true"],[
     dnl if with_vrna is set, then use it to set the path for pkg_config
     if test "$with_vrna" != "" ; then
         export PKG_CONFIG_PATH="$with_vrna/lib/pkgconfig:$PKG_CONFIG_PATH"
-        if test ! -e "$with_vrna/lib/pkgconfig/RNAlib2.pc" ; then
-            AC_MSG_NOTICE([Pkg-config of Vienna RNA cannot be found.])
-            AC_MSG_NOTICE([Fall back to guessing.])
-            VRNA_GUESS_FALLBACK="true"
-        fi
     fi
     dnl call pkg-config (macro PKG_CHECK_MODULES) to set VRNA_LIBS and VRNA_CFLAGS
-    AS_IF([test "$VRNA_GUESS_FALLBACK" != "true"],[
-        PKG_CHECK_MODULES([VRNA],[RNAlib2 >= 2.2.4],[VRNALIB_OK=true],[VRNALIB_OK=false])
-    ])
+    PKG_CHECK_MODULES([VRNA],[RNAlib2 >= 2.2.9],[VRNALIB_OK=true],[VRNALIB_OK=false])
 ])
 dnl if pkg-config is not available or something else went wrong with pkg-config,
 dnl then guess the configuration
@@ -173,6 +169,38 @@ AS_IF([test "$VRNALIB_OK" != "true"],
   VRNA_CFLAGS="-I$vrna_prefix/include"
   AC_MSG_NOTICE([Guessing of ViennaRNA flags may be avoided by installing pkg-config.])
   VRNALIB_OK=true
+])
+
+
+dnl ============================================================ 
+dnl check for RNAlib/c++-compiler incompatibility 
+dnl If the ViennaRNA lib is compiled w/ C11 support, then the c++
+dnl compiler has to support anonymous unions and structs.
+
+dnl does the RNAlib require C11 support
+AC_CHECK_LIB([RNA],[vrna_C11_features],[VRNA_USES_C11_FEATURES="true"],[VRNA_USES_C11_FEATURES="false"])
+
+dnl can the C++ compiler compile anonymous unions
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([struct s{union{struct {float x;};struct {int i;};};};])],
+                  [HAS_ANONYMOUS_STRUCT="yes"],[HAS_ANONYMOUS_STRUCT="no"])
+dnl
+AS_IF([test "$VRNA_USES_C11_FEATURES" = "true" && test "$HAS_ANONYMOUS_STRUCT" = "no"], 
+      [AC_MSG_ERROR([
+      ============================================================
+      Your C++ compiler does not support C11 features
+      (anonymous structs) that are required by the available
+      RNAlib. Please recompile the Vienna RNA library with
+      --disable-c11 or use a different C++ compiler.
+      ============================================================
+      ])
+])
+
+dnl END check for RNAlib/c++-compiler incompatibility
+dnl ============================================================
+
+dnl disable c11 if necessary
+AS_IF([test "$VRNA_USES_C11_FEATURES" = "false" ],[
+    AX_APPEND_FLAG(["-DVRNA_DISABLE_C11_FEATURES"],[VRNA_CFLAGS])
 ])
 
 AC_MSG_NOTICE([VRNA_LIBS=$VRNA_LIBS; VRNA_CFLAGS=$VRNA_CFLAGS])
@@ -231,7 +259,7 @@ AC_ARG_ENABLE([link-static],
 
 AC_MSG_RESULT([$link_statically])
 if test "$link_statically" = "yes"; then
-   LDFLAGS="$LDFLAGS -all-static"
+   AX_APPEND_FLAG(["-all-static"],[LDFLAGS])
 fi
 
 dnl ----------------------------------------
@@ -252,7 +280,7 @@ AM_CONDITIONAL([STATIC_LIBLOCARNA],[test "$link_statically" = "no" -a "$dynamic_
 dnl for lgomp if all-static
 AS_IF([test "$link_statically" = "yes"],
 [
-LDFLAGS="$LDFLAGS -ldl"
+        AX_APPEND_FLAG(["-ldl"],[LDFLAGS])
 ])
 
 
@@ -269,7 +297,7 @@ AC_ARG_ENABLE([large-pf],
 )
 AC_MSG_RESULT([$use_large_pf])
 if test "$use_large_pf" = "yes"; then
-    LIBDEFS="$LIBDEFS -DVERY_LARGE_PF"
+    AX_APPEND_FLAG(["-DVERY_LARGE_PF"],[LIBDEFS])
     AC_DEFINE([VERY_LARGE_PF],1,[Use long double type for partition functions])
 fi
 
@@ -279,9 +307,9 @@ AC_C_CONST
 AC_TYPE_SIZE_T
 
 
-AC_CONFIG_FILES([Makefile src/Makefile Utils/Makefile man/Makefile
+AC_CONFIG_FILES([Makefile src/Makefile src/Tests/Makefile src/Utils/Makefile Doc/man/Makefile
 lib/Makefile lib/perl/Makefile lib/perl/MLocarna/Makefile
-LocARNA-${API_VERSION}.pc:LocARNA.pc.in
+LocARNA-${API_VERSION}.pc:lib/LocARNA.pc.in
 src/package_constants.hh:src/package_constants.hh.in
 Packaging/debian/control Packaging/rpm/locarna.spec])
 

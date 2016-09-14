@@ -47,6 +47,11 @@ Be quiet.
 Preserve sequence order of the input in the final alignment.  Affects
 output to stdout and results/result.aln.
 
+=item B<--stockholm>
+
+Write STOCKHOLM files of all final and intermediate alignments (in
+addition to CLUSTALW files).
+
 =back 
 
 =head2 Controlling pairwise alignments
@@ -417,7 +422,6 @@ $MLocarna::PACKAGE_STRING=readpipe "$bindir/locarna --version";
 ## vienna package programs
 my $RNAfold = "RNAfold";
 my $RNAplfold = "RNAplfold";
-$MLocarna::RNAalifold = "RNAalifold";
 
 my $input_dir="input";
 my $probs_dir="probs";
@@ -449,6 +453,8 @@ my $quiet;
 my $verbose;
 
 my $keep_sequence_order;
+
+my $stockholm;
 
 my $noLP=1;
 my $no_lonely_pair;
@@ -694,9 +700,9 @@ my %options_hash=
      
      ## output
      "write-structure" => \$write_structure,
-
+     
      "width" => \$width,
-
+     
      ## "standard" options
      
      "verbose" => \$verbose,
@@ -705,6 +711,8 @@ my %options_hash=
      "quiet" => \$quiet,
      
      "keep-sequence-order" => \$keep_sequence_order,
+
+     "stockholm" => \$stockholm,
 
      "local-progressive" => \$opt_local_progressive,
      
@@ -729,7 +737,7 @@ my @options = #options that are not or not automatically passed to locarna
 
      "pw-aligner=s",
      "pw-aligner-p=s",
-
+     
      "pw-aligner-options=s",
      "pw-aligner-p-options=s",
      
@@ -813,6 +821,8 @@ my @options = #options that are not or not automatically passed to locarna
      "width=i",
 
      "keep-sequence-order",
+
+     "stockholm",
 
      "local-progressive",
      "global-progressive",
@@ -923,7 +933,8 @@ if ($moreverbose) {
     $MLocarna::Aux::verbosemode=1;
 }
 
-
+## make STDOUT 'hot', so output does not get mixed up when redirected
+$|=1;
 
 ## ------------------------------------------------------------
 ## write header
@@ -1194,7 +1205,12 @@ if (defined($opt_no_write_am_probs)) { $opt_write_am_probs = !$opt_no_write_am_p
 ####
 ## get full, absolute path for parameter file
 if (defined($rnafold_parameter_file)) {
-    $rnafold_parameter_file = abs_path($rnafold_parameter_file);
+    if ((!defined(abs_path($rnafold_parameter_file)) || (! -e $rnafold_parameter_file))) {
+        printerr "WARNING: RNAfold parameters $rnafold_parameter_file not found (use default)!\n";
+        $rnafold_parameter_file = undef;
+    } else {
+        $rnafold_parameter_file = abs_path($rnafold_parameter_file);
+    }
 }
 
 ####
@@ -1208,7 +1224,6 @@ if (defined($rnafold_parameter_file)) {
 if (defined($rnafold_temperature)) {
     $RNAfold_args.=" -T $rnafold_temperature";
 }
-
 
 ####
 ## get full, absolute path for pairwise aligner
@@ -1510,7 +1525,7 @@ sub compute_and_write_reliabilities {
     if ($reliabilities_single_sequences) {
 	mkdir "$tgtdir/$results_dir/$single_reliabilities_dir";
 	## compute reliability profiles for single sequences
-	for my $name (@names) {
+	for my $name (sort {$a cmp $b} @names) {
 	    # printmsg 1,"Compute structure reliability profile for $name\n";
 	    
 	    ## compute and write reliability profiles for the single sequences
@@ -1543,8 +1558,30 @@ sub compute_and_write_reliabilities {
     return \%reliable_structures;
 }
 
+## chop string into parts of fixed length
+##
+## @param $s string
+## @param $w length (<=0 means don't split)
+## @return list of substrings
+##
+sub chop_string {
+    my ($s,$w) = @_;
 
+    if ($w<=0) {
+        return ($s);
+    }
 
+    my @l=();
+    while (length($s)>0) {
+        push @l,substr($s,0,$w);
+        if (length($s)>$w) {
+            $s=substr($s,$w);
+        } else {
+            last;
+        }
+    }
+    return @l;
+}
 
 ## perform the complete multiple alignment for the given sequences
 ##
@@ -1792,9 +1829,10 @@ sub perform_multiple_alignment($) {
 	$tree = upgma_tree(\@names,$score_matrix);
 	
     } # end generation of tree
-
     
-    open(TREE,">$results_dir/result.tree")|| die "Cannot write to $results_dir/result.tree";
+    
+    open(TREE,">$results_dir/result.tree") 
+      || die "Cannot write to $results_dir/result.tree";
     print TREE "$tree\n";
     close TREE;
 
@@ -1820,14 +1858,16 @@ sub perform_multiple_alignment($) {
     printmsg 3, "Perform progressive alignment ...\n";
 
     my $current_alignment_name =
-	perform_progressive_steps($tree_postorder,\%bmprobs,\%amprobs);
-
+      perform_progressive_steps($tree_postorder,\%bmprobs,\%amprobs);
+    
     ## ----------------------------------------
     ## copy results to files result_prog.aln and result_prog.pp
     ##
     system "cp", "$current_alignment_name.aln", "$results_dir/result_prog.aln";
     system "cp", "$current_alignment_name.pp", "$results_dir/result_prog.pp";
-
+    if ($stockholm) {
+        system "cp", "$current_alignment_name.stk", "$results_dir/result_prog.stk";
+    }
 
     ### ============================================================
     ### iterative refinement
@@ -1881,7 +1921,10 @@ sub perform_multiple_alignment($) {
     #
     system "cp", "$current_alignment_name.aln", "$results_dir/result.aln";
     system "cp", "$current_alignment_name.pp", "$results_dir/result.pp";
-    
+    if ($stockholm) {
+        system "cp", "$current_alignment_name.stk", "$results_dir/result.stk";
+    }
+
     ########################################
     ## rewrite the result alignment result.aln: sort
     ##
@@ -1894,36 +1937,36 @@ sub perform_multiple_alignment($) {
     open(ALNOUT,">$results_dir/result.aln") || die "Cannot write $results_dir/result.aln";
     my $namewidth=write_clustalw_alnloh(*ALNOUT,$aln,$width);
     close ALNOUT;
+
+    printmsg 3, readpipe("cat $results_dir/result.aln | grep -v '^CLUSTAL'");
     
-
-    #if (!$verbose || (defined($iterations) && ($iterations>0))) {
-	printmsg 3, readpipe("cat $results_dir/result.aln | grep -v '^CLUSTAL W --- LocARNA'");
-    #}
-
-
     ## ----------------------------------------
     ## compute and show alifold prediction
     
     my $alistr = alifold_structure("$results_dir/result.aln",$RNAfold_args);
     chomp $alistr;
 
-    printmsg 3, sprintf("%-".$namewidth."s %s\n","alifold",$alistr);
+    if ($alistr=~/([^\s]*)\s(.*)/) {
+        my $name="alifold";
+        for my $s (chop_string($1,$width)) {
+            printmsg 3, sprintf("\n%-".$namewidth."s %s",$name,$s);
+            $name="";
+        }
+        printmsg 3, " ".$2."\n";
+    }
     
     # in probabilistic mode compute and store alifold dotplot
     if ($probabilistic) {
-	system "$MLocarna::RNAalifold $RNAfold_args -r -p $results_dir/result.aln >/dev/null 2>&1";
-	rename "alidot.ps", "$results_dir/alidot.ps";
+        alifold_pf("$results_dir/result.aln",$RNAfold_args);
+        rename "alidot.ps", "$results_dir/alidot.ps";
     }
     
     rename "alirna.ps", "$results_dir/alirna.ps";
-    
     
     chdir $current_dir;
 }
 
 
-### ============================================================================
-### ============================================================================
 ### ============================================================================
 ### SUBS
 ###
@@ -2057,11 +2100,6 @@ sub compute_match_probs($$$$$$$) {
 	    die "Pairwise aligner failed to write match probabilities to file; called by $cmd";
 	}
 	
-	#if ($moreverbose) {
-	#    system("cat $tmpfile_bm");
-	#    system("cat $tmpfile_am");
-	#}
-	
 	my %mat_bm = read_sparsematrix_2D($tmpfile_bm);
 	my %mat_am = read_sparsematrix_4D($tmpfile_am);
 	
@@ -2111,6 +2149,10 @@ sub call_locarna( $$$ ) {
     
     my $cmd="$pw_aligner $inA $inB $locarna_params --clustal=$tgt.aln";
     
+    if ($stockholm) {
+        $cmd .= " --stockholm=$tgt.stk";
+    }
+
     $cmd .= " --pp=$tgt.pp";
     
     $cmd .= " ".reference_alignment_option($refaln_filename);
@@ -2126,7 +2168,10 @@ sub call_locarna( $$$ ) {
 	die "Pairwise aligner ($pw_aligner) failed to write alignment to file";
     }
     
-    system "cat $tgt.aln | grep -v '^CLUSTAL --- LocARNA'" if $verbose;
+    if ($verbose and not $moreverbose) {
+        system "cat $tgt.aln | grep -v '^CLUSTAL'";
+        print "\n";
+    }
 }
 
 
@@ -2538,7 +2583,7 @@ sub generate_input_files_without_bpps( $ ) {
 	if (! $ignore_constraints) {
 	    my $constraints = sequence_constraint_string($seqs->[$i]);
 	    if (defined($constraints) && ($constraints ne "")) {
-		print "WARNING: Constraints found for sequence $i, but not supported without precomputation of base pair probabilities\n."
+		printerr "WARNING: Constraints found for sequence $i, but not supported without precomputation of base pair probabilities\n."
 	    }
 	}
 	
@@ -2579,8 +2624,8 @@ sub compute_dotplot($$) {
     my $RNAfoldp_redirect="";
     my $convert_to_pp=1;
     my $seqname;
-    ## Note: in the case of using locarna_rnafold_pp, we do directly
-    ## produce a the pp file in the input sub-directory. Since no dp file is produced,
+    ## Note: in the case of using locarna_rnafold_pp, we directly
+    ## produce the pp file in the input sub-directory. Since no dp file is produced,
     ## caching of dp files does not work.
     ##
     if (($RNAfold_args eq "") && (!defined($plfold_span)) 
@@ -2688,8 +2733,27 @@ sub compute_dotplot($$) {
 					 "$RNAfoldpNonLocal -C $RNAfoldp_redirect");
 		}
 	    } else { ## no constraints given; we could apply local folding
-		systemverb_withinput(">$seqname\n$seq_str\n",
-				     "$RNAfoldp $RNAfoldp_redirect");
+                ##
+                ## fix -W and -L parameters to avoid warnings of
+                ## RNAplfold if window size is too large for sequence.
+                ##
+                my $RNAfoldp_edited=$RNAfoldp;
+                if ($RNAfoldp =~ /-W (\d+)/) {
+                    my $win=$1;
+                    my $slen=length($seq_str);
+                    if ($win>$slen) {
+                        $RNAfoldp_edited =~ s/-W $win/-W $slen/;
+                        $win=$slen;
+                    }
+                    if ($RNAfoldp =~ /-L (\d+)/) {
+                        if ($1 > $win) {
+                            $RNAfoldp_edited =~ s/-L $1/-L $win/;
+                        }
+                    }
+                }
+                
+                systemverb_withinput(">$seqname\n$seq_str\n",
+				     "$RNAfoldp_edited $RNAfoldp_redirect");
 	    }
 	    
 	    if (defined($dp_cache)) {

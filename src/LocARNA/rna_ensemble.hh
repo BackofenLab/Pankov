@@ -9,7 +9,6 @@
 
 #include "aux.hh"
 
-
 namespace LocARNA {
 
     class MultipleAlignment;
@@ -33,14 +32,6 @@ namespace LocARNA {
      *
      * @todo split up RnaEnsemble into two classes; one with and one
      * without in-loop probabilities (like RnaData and ExtRnaData)
-     *
-     * @todo consider to introduce local_copy flag in constructor to allow
-     * using the object without local copy, which could improve
-     * performance in the common use of the class; however, this is very
-     * dangerous and violates common assumptions, since without local copy
-     * of ViennaRNA-data structures the construction of an object
-     * invalidates previous instances. We could make this an "protected"
-     * option for exclusive internal use, e.g. by RnaData.
      *
      * @note the class guarantees that sequences are normalized
      * (uppercase, T->U) even when read in unnormalized form,
@@ -142,7 +133,7 @@ namespace LocARNA {
 	 */
 	double
 	min_free_energy() const;
-	
+
 	/** 
 	 * \brief get minimum free energy structure
 	 *
@@ -303,7 +294,7 @@ namespace LocARNA {
 
 
 	/** 
-	 * \brief Probabilty of base pair in the external 'loop'
+	 * \brief Probability of base pair in the external 'loop'
 	 * 
 	 * @param i left end of inner base pair
 	 * @param j right end of inner base pair
@@ -323,8 +314,7 @@ namespace LocARNA {
 	double
 	arc_external_prob(size_type i,
 			  size_type j) const;
-		
-		
+
     };
 
 }

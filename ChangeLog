@@ -1,5 +1,25 @@
 ============================================================
 === 2016
+1.8.12-pre
+	Cleanup some files in the repository and distribution
+1.8.11 (2016-Aug-15)
+	Add configure flag --enable-STDC; set default to C11 (RNAlib compatibility)
+	Fix output order of reliable structures in mlocarna
+	Migrate to new vrna api; fix pf_scale bug
+1.8.10  (2016-Jul-15)
+	Improve input checking in mlocarna
+	Increase API version to 1.5
+	Wrap long alifold consensus output in mlocarna
+	Add consensus structure in locarna output, selectable types mea|alifold|none
+	Add optional stockholm output to mlocarna
+	Introduce quiet switch for locarna, locarna_p, sparse, and exparna_p
+	Code cleanup in driver programs
+	Handle sequence name clashes by systematic renaming
+	Read stockholm format
+	Factorize common code in locarna, locarna_p and sparse (MainHelper)
+	Add stockholm support input and output to locarna
+        Fix bug occuring with empty input sequences
+	Call alifold with /best/ parameters (from perl /and/ c++)
 	Fix locarnate (compatibility to current locarna); add unit test
 
 1.8.9   (2016-21-04)

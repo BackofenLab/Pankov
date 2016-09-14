@@ -1,3 +1,7 @@
+SUBDIRS=Utils . Tests
+
+AM_DEFAULT_SOURCE_EXT = .cc
+
 ## Place generated object files (.o) into the same directory as their source
 ## files, in order to avoid collisions when non-recursive make is used.
 AUTOMAKE_OPTIONS = subdir-objects
@@ -47,8 +51,7 @@ nobase_library_include_HEADERS = LocARNA/aux.hh LocARNA/plusvector.hh	\
 	LocARNA/pfold_params.hh LocARNA/scoring.hh			\
 	LocARNA/scoring_fwd.hh LocARNA/infty_int.hh			\
 	LocARNA/match_probs.hh LocARNA/alphabet.hh			\
-	LocARNA/alphabet.icc LocARNA/ribosum.hh				\
-	LocARNA/ribosum85_60.icc LocARNA/ribofit.hh			\
+	LocARNA/alphabet.icc LocARNA/ribosum.hh LocARNA/ribofit.hh	\
 	LocARNA/ribofit_will2014.ihh LocARNA/ribofit_will2014.icc	\
 	LocARNA/sequence_annotation.hh LocARNA/anchor_constraints.hh	\
 	LocARNA/arc_matches.hh LocARNA/aligner_restriction.hh		\
@@ -60,13 +63,14 @@ nobase_library_include_HEADERS = LocARNA/aux.hh LocARNA/plusvector.hh	\
 	LocARNA/type_wrapper.hh LocARNA/global_stopwatch.hh		\
 	LocARNA/tuples.hh LocARNA/mcc_matrices.hh			\
 	LocARNA/aligner_n.hh LocARNA/sparsification_mapper.hh		\
-	LocARNA/exact_matcher.hh LocARNA/aligner_nn.hh
+	LocARNA/exact_matcher.hh LocARNA/main_helper.icc		\
+	LocARNA/ribosum85_60.icc
 
 ## binary programs
 ##
 ##   use extension .bin for binary locarna to avoid name collission in src dir
 ##
-bin_PROGRAMS = locarna.bin ribosum2cc locarna_p locarnap_fit	\
+bin_PROGRAMS = locarna.bin locarna_p locarnap_fit	\
                locarna_deviation locarna_rnafold_pp ribosum2cc	\
                exparna_p sparse sparse_n
 
@@ -89,27 +93,6 @@ transform = s/\.bin$$//
 # all binaries should be linked to libLocARNA
 LDADD=libLocARNA-$(API_VERSION).la
 
-BINTESTS = Tests/multiple_alignment Tests/rna_data Tests/ext_rna_data	\
-           Tests/trace_controller Tests/rna_ensemble			\
-           Tests/rna_structure Tests/matrices
-SCRIPTTESTS = Tests/mlocarna-calls.sh
-
-TESTS= $(BINTESTS) $(SCRIPTTESTS)
-
-check_PROGRAMS = $(BINTESTS)
-
-AM_DEFAULT_SOURCE_EXT = .cc
-
-MYTESTDATA = Tests/archaea.aln Tests/archaea.fa Tests/archaea-wrong.fa
-BUILT_SOURCES = $(MYTESTDATA)
-EXTRA_DIST=$(MYTESTDATA:%=%.data) $(SCRIPTTESTS) Tests/check.hh
-Tests/archaea.aln: Tests/archaea.aln.data
-	cp $< $@
-Tests/archaea.fa: Tests/archaea.fa.data
-	cp $< $@
-Tests/archaea-wrong.fa: Tests/archaea-wrong.fa.data
-	cp $< $@
-CLEANFILES=$(MYTESTDATA)
 
 dist_locarna_bin_SOURCES = locarna.cc
 
@@ -119,9 +102,6 @@ exparna_p_SOURCES = exparna_p.cc
 
 sparse_SOURCES = sparse.cc
 
-sparse_n_SOURCES = sparse_n.cc
-
-ribosum2cc_SOURCES = ribosum2cc.cc
 
 locarnap_fit_SOURCES = fit.cc LocARNA/fitonoff.cc LocARNA/options.hh LocARNA/fitonoff.hh
 
@@ -129,15 +109,13 @@ locarna_deviation_SOURCES = deviation.cc
 
 locarna_rnafold_pp_SOURCES = locarna_rnafold_pp.cc
 
+BUILT_SOURCES = LocARNA/ribosum85_60.icc
+CLEANFILES = LocARNA/ribosum85_60.icc
 
-BUILT_SOURCES += LocARNA/ribosum85_60.icc
+if !VC_CROSS_COMPILING
+LocARNA/ribosum85_60.icc: \
+	ribosum2cc \
+	$(top_srcdir)/Data/Matrices/RIBOSUM85_60
 
-# LocARNA/ribosum85_60.icc, we avoid to define the dependency from
-# ribosum2cc directly, but still require that ribosum2cc is made.
-# This makes it possible to include LocARNA/ribosum85_60.icc in the
-# distribution and compile without executing ribosum2cc, e.g. for
-# cross compiling.
-LocARNA/ribosum85_60.icc: ribosum2cc.cc $(top_srcdir)/Matrices/RIBOSUM85_60
-	make ribosum2cc 
-	./ribosum2cc Ribosum85_60 "$(top_srcdir)/Matrices/RIBOSUM85_60" >$@
-
+	./ribosum2cc Ribosum85_60 "$(top_srcdir)/Data/Matrices/RIBOSUM85_60" $@
+endif
