@@ -380,7 +380,7 @@ namespace LocARNA {
 			+ M(arcA_left_index_before, j_index);
 		max_score = std::max(max_score,  domain_del_score);
 		if (trace_debugging_output) {
-				std::cout << "\M: domain del: arcA" << arcA
+				std::cout << "M: domain del: arcA" << arcA
 					  << " D(arcA,empty_arcB)=" << sv.D(arcA, empty_arcB)
 					  << " sv.scoring()->arcDel(arcA, true)="
 					  <<sv.scoring()->arcDel(arcA, true)
@@ -418,7 +418,7 @@ namespace LocARNA {
 			+ M(i_index, arcB_left_index_before);
 		max_score = std::max(max_score,  domain_ins_score);
 		if (trace_debugging_output) {
-				std::cout << "\M: domain ins: arcB" << arcB
+				std::cout << "M: domain ins: arcB" << arcB
 					  << " D(arcA,empty_arcB)=" << sv.D(empty_arcA, arcB)
 					  << " sv.scoring()->arcDel(arcB, true)="
 					  <<sv.scoring()->arcDel(arcB, false)
