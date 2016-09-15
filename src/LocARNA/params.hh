@@ -136,6 +136,8 @@ namespace LocARNA {
 
 	bool track_closing_bp_; //!< whether to track the exact right end of a closing basepair for SPARSE
 
+	bool multiloop_deletion_; //!< whether to allow aligning an entire branch of a multiloop to gap
+
 	const AnchorConstraints *constraints_; //!< anchor constraints
 
 
@@ -257,6 +259,13 @@ namespace LocARNA {
 	 */
 	AlignerParams &
 	track_closing_bp(bool track_closing_bp) {track_closing_bp_=track_closing_bp; return *this;}
+
+	/**
+	 * @brief set multiloop_deletion
+	 * @param multiloop_deletion whether to allow multiloop_deletion
+	 */
+	AlignerParams &
+	multiloop_deletion(bool multiloop_deletion) {multiloop_deletion_=multiloop_deletion; return *this;}
 
 
 	/**

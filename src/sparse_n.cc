@@ -169,6 +169,7 @@ struct command_line_parameters {
 
     bool opt_track_closing_bp; //!< whether to track right end of a closing basepair
     bool opt_use_conditional_scoring; //!< whether to use the conditional probability scoring
+    bool opt_multiloop_deletion; //!< whether to allow aligning an entire branch of a multiloop to gap
 
     std::string ribosum_file; //!< ribosum_file
     bool use_ribosum; //!< use_ribosum
@@ -251,6 +252,7 @@ option_def my_options[] = {
 
     {"track-closing-bp",0,&clp.opt_track_closing_bp,O_NO_ARG,0,O_NODEFAULT,"","Track right end of a closing basepair "},
     {"use-conditional-scoring",0,&clp.opt_use_conditional_scoring,O_NO_ARG,0,O_NODEFAULT,"","Use conditional probability scoring "},
+    {"multiloop-deletion",0,&clp.opt_multiloop_deletion,O_NO_ARG,0,O_NODEFAULT,"","Allow aligning an entire multiloop brnach to gap "},
 
 
     //    {"exclusion",'E',0,O_ARG_INT,&clp.exclusion_score,"0","score","Exclusion weight"},
@@ -864,6 +866,8 @@ main(int argc, char **argv) {
 	. min_bm_prob(clp.min_bm_prob)
 	. stacking(clp.opt_stacking || clp.opt_new_stacking)
 	. track_closing_bp(clp.opt_track_closing_bp)
+	. multiloop_deletion(clp.opt_multiloop_deletion)
+
 	. constraints(seq_constraints);
 
 
