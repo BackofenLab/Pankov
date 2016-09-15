@@ -84,6 +84,9 @@ struct command_line_parameters : public MainHelper::std_command_line_parameters 
     bool opt_normalized; //!< whether to do normalized alignment
     int normalized_L; //!< normalized_L
 
+    bool opt_track_closing_bp; //!< whether to track right end of a closing basepair
+
+
 
 };
 
@@ -573,6 +576,13 @@ main(int argc, char **argv) {
     SparsificationMapper mapperB(bpsB, *rna_dataB, clp.prob_unpaired_in_loop_threshold,
                                  clp.prob_basepair_in_loop_threshold, true);
 
+    //TODO: It is inefficient to create mapper_arcsX, if track closing pair is not enabled
+	//construct mappers where right_sdj list is indexed by arcIndex
+	SparsificationMapper mapper_arcsA(bpsA, *rna_dataA, clp.prob_unpaired_in_loop_threshold,
+			clp.prob_basepair_in_loop_threshold, false);
+	SparsificationMapper mapper_arcsB(bpsB, *rna_dataB, clp.prob_unpaired_in_loop_threshold,
+			clp.prob_basepair_in_loop_threshold, false);
+
     // ------------------------------------------------------------
     // Sequence match probabilities (for MEA-Alignment)
     //
@@ -674,8 +684,10 @@ main(int argc, char **argv) {
 
     // initialize aligner object, which does the alignment computation
     AlignerN aligner = AlignerN::create()
-	. sparsification_mapperA(mapperA)
+    . sparsification_mapperA(mapperA)
 	. sparsification_mapperB(mapperB)
+	. sparsification_mapper_arcsA(mapper_arcsA)
+	. sparsification_mapper_arcsB(mapper_arcsB)
 	. seqA(seqA)
 	. seqB(seqB)
 	. arc_matches(*arc_matches)
@@ -691,6 +703,7 @@ main(int argc, char **argv) {
 	. min_am_prob(clp.min_am_prob)
 	. min_bm_prob(clp.min_bm_prob)
 	. stacking(clp.opt_stacking || clp.opt_new_stacking)
+	. track_closing_bp(clp.opt_track_closing_bp)
 	. constraints(seq_constraints);
 
 
