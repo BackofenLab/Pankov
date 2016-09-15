@@ -64,7 +64,7 @@ nobase_library_include_HEADERS = LocARNA/aux.hh LocARNA/plusvector.hh	\
 	LocARNA/tuples.hh LocARNA/mcc_matrices.hh			\
 	LocARNA/aligner_n.hh LocARNA/sparsification_mapper.hh		\
 	LocARNA/exact_matcher.hh LocARNA/main_helper.icc		\
-	LocARNA/ribosum85_60.icc
+	LocARNA/ribosum85_60.icc LocARNA/aligner_nn.hh
 
 ## binary programs
 ##
