@@ -169,7 +169,7 @@ struct command_line_parameters {
 
     bool opt_track_closing_bp; //!< whether to track right end of a closing basepair
     bool opt_use_conditional_scoring; //!< whether to use the conditional probability scoring
-    bool opt_multiloop_deletion; //!< whether to allow aligning an entire branch of a multiloop to gap
+    int opt_multiloop_deletion; //!< whether to allow aligning an entire branch of a multiloop to gap
 
     std::string ribosum_file; //!< ribosum_file
     bool use_ribosum; //!< use_ribosum
@@ -252,8 +252,8 @@ option_def my_options[] = {
 
     {"track-closing-bp",0,&clp.opt_track_closing_bp,O_NO_ARG,0,O_NODEFAULT,"","Track right end of a closing basepair "},
     {"use-conditional-scoring",0,&clp.opt_use_conditional_scoring,O_NO_ARG,0,O_NODEFAULT,"","Use conditional probability scoring "},
-    {"multiloop-deletion",0,&clp.opt_multiloop_deletion,O_NO_ARG,0,O_NODEFAULT,"","Allow aligning an entire multiloop brnach to gap "},
-
+    {"multiloop-deletion",0,0, O_ARG_INT,&clp.opt_multiloop_deletion,"0","diff","Maximum allowed length of a  multiloop branch to be aligned gap, "
+    		"value 0 disables computation "},
 
     //    {"exclusion",'E',0,O_ARG_INT,&clp.exclusion_score,"0","score","Exclusion weight"},
     //    {"stacking",0,&clp.opt_stacking,O_NO_ARG,0,O_NODEFAULT,"","Use stacking terms (needs stack-probs by RNAfold -p2)"},

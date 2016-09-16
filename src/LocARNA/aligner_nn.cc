@@ -352,28 +352,32 @@ namespace LocARNA {
 	const ArcIdxVec& arcsA = mapper_arcsA.valid_arcs_right_adj(idxA, i_index);
 	const ArcIdxVec& arcsB = mapper_arcsB.valid_arcs_right_adj(idxB, j_index);
 
-	if(params->multiloop_deletion_) {
+	if(params->multiloop_deletion_ > 0 ) {
 
 		//domain deletion
 		for (ArcIdxVec::const_iterator arcAIdx = arcsA.begin();
 		 arcAIdx != arcsA.end();
 		 ++arcAIdx) {
 			const Arc& arcA = bpsA.arc(*arcAIdx);
+			if(params->multiloop_deletion_< (arcA.right()-arcA.left()+1) ) // Todo: if the adjlist is sorted we can return instead of continue
+				continue;
 			matidx_t  arcA_left_index_before   =
 			mapper_arcsA.first_valid_mat_pos_before(idxA, arcA.left(), al_seq_pos);
 			seq_pos_t arcA_left_seq_pos_before =
 			mapper_arcsA.get_pos_in_seq_new(idxA, arcA_left_index_before);
 
 			opening_cost_A = 0;
-			if (arcA_left_seq_pos_before < (arcA.left() - 1)) {
-			// implicit base deletion because of sparsification
-			opening_cost_A = sv.scoring()->indel_opening();
-			}
+//			if (arcA_left_seq_pos_before < (arcA.left() - 1)) {
+//			// implicit base deletion because of sparsification
+//			opening_cost_A = sv.scoring()->indel_opening();
+//			}
 
 			Arc empty_arcB = BasePairs__Arc(bpsB.num_bps(), 0, 0);
 
-			infty_score_t arc_indel_score_open = getGapCostBetween( arcA_left_seq_pos_before, arcA.left(), true) +
-			sv.D(arcA, empty_arcB) + sv.scoring()->arcDel(arcA, true)
+			infty_score_t arc_indel_score_open =
+			sv.D(arcA, empty_arcB) +
+			(infty_score_t)(sv.scoring()->loop_indel_score(getGapCostBetween( arcA_left_seq_pos_before, arcA.left(), true).finite_value())) +
+					sv.scoring()->arcDel(arcA, true)
 			 + sv.scoring()->indel_opening_loop();
 
 
@@ -399,19 +403,23 @@ namespace LocARNA {
 		 arcBIdx != arcsB.end();
 		 ++arcBIdx) {
 			const Arc& arcB = bpsB.arc(*arcBIdx);
+			if(params->multiloop_deletion_< (arcB.right()-arcB.left()+1) ) // Todo: if the adjlist is sorted we can return instead of continue
+				continue;
+
 			matidx_t  arcB_left_index_before   =
 			mapper_arcsB.first_valid_mat_pos_before(idxB, arcB.left(), bl_seq_pos);
 			seq_pos_t arcB_left_seq_pos_before =
 			mapper_arcsB.get_pos_in_seq_new(idxB, arcB_left_index_before);
 			opening_cost_B = 0;
-			if (arcB_left_seq_pos_before < (arcB.left() - 1)) {
-			// implicit base deletion because of sparsification
-			opening_cost_B = sv.scoring()->indel_opening();
-			}
+//			if (arcB_left_seq_pos_before < (arcB.left() - 1)) {
+//			// implicit base deletion because of sparsification
+//			opening_cost_B = sv.scoring()->indel_opening();
+//			}
 
 			Arc empty_arcA = BasePairs__Arc(bpsA.num_bps(), 0, 0);
 
-			infty_score_t arc_indel_score_open = getGapCostBetween( arcB_left_seq_pos_before, arcB.left(), false) +
+			infty_score_t arc_indel_score_open = (infty_score_t)sv.scoring()->loop_indel_score(
+					getGapCostBetween( arcB_left_seq_pos_before, arcB.left(), false).finite_value()) +
 			sv.D(empty_arcA, arcB) + sv.scoring()->arcDel(arcB, false)
 			 + sv.scoring()->indel_opening_loop();
 
@@ -599,7 +607,7 @@ namespace LocARNA {
     {
 
 	IAmat(0, arcB.idx()) = infty_score_t::neg_infty;
-	if (params->multiloop_deletion_ && arcB.idx()==bpsB.num_bps())
+	if (params->multiloop_deletion_> 0 && arcB.idx()==bpsB.num_bps())
 		IAmat(0, arcB.idx()) = (infty_score_t)0; //domain insdel base case
 
 	matidx_t max_right_index;
@@ -627,7 +635,7 @@ namespace LocARNA {
 	    std::cout << "fill_IB_entries: " << "arcA=" << arcA<< ", idxB=" << idxB << "max_br=" << max_br << std::endl;
 
 	IBmat(arcA.idx(), 0) = infty_score_t::neg_infty;
-	if (params->multiloop_deletion_ && arcA.idx()==bpsA.num_bps())
+	if (params->multiloop_deletion_> 0 && arcA.idx()==bpsA.num_bps())
 		IBmat(arcA.idx(), 0) = (infty_score_t)0; //domain insdel base case
 
 	pos_type max_right_index;
@@ -841,6 +849,8 @@ namespace LocARNA {
 		for (BasePairs::LeftAdjList::const_iterator arcX =
 				adjlX.begin(); arcX != adjlX.end(); ++arcX) {
 
+			if(params->multiloop_deletion_< (arcX->right()-arcX->left()+1) ) // Todo: if the adjlist is sorted we can return instead of continue
+				continue;
 			if (trace_debugging_output) {
 				std::cout << "align_D domain insertion isA=" << isA  << "  arcX():" << *arcX << std::endl;
 				std::cout << "fill_IA_entries: " << xl << "," << arcX->right() <<   std::endl;
@@ -860,7 +870,8 @@ namespace LocARNA {
 
 			matidx_t xr_prev_mat_idx_pos = mapper_arcsX.number_of_valid_mat_pos(arcX->idx())-1; //TODO: VERY IMPORTNANT: -1 or not?
 			seq_pos_t xr_prev_seq_pos = mapper_arcsX.get_pos_in_seq_new(arcX->idx(), xr_prev_mat_idx_pos);
-			infty_score_t jumpGapCostX = getGapCostBetween(xr_prev_seq_pos, arcX->right(), isA);
+			infty_score_t jumpGapCostX = (infty_score_t)scoring->loop_indel_score(
+					getGapCostBetween(xr_prev_seq_pos, arcX->right(), isA).finite_value());
 			if (isA) {
 				infty_score_t ix= IAmat(xr_prev_mat_idx_pos,empty_arcY.idx()) + jumpGapCostX;
 				IADmat(arcX->idx(), empty_arcY.idx()) = ix;
@@ -881,7 +892,7 @@ namespace LocARNA {
 	computeGapCosts(true, def_scoring_view);//gap costs A //tocheck:always def_score view!
 	computeGapCosts(false, def_scoring_view);//gap costs B //tocheck:always def_score view!
 
-	if(params->multiloop_deletion_) {
+	if(params->multiloop_deletion_> 0) {
 		// Fill entries of domain insertion deletion i.e. IA with empty B sub-sequence and the opposite
 		compute_IAB_entries_domain(r.startA(), r.endA(), true);
 		compute_IAB_entries_domain(r.startB(), r.endB(), false);
@@ -1334,7 +1345,7 @@ namespace LocARNA {
 	// case of stacking: not supported
 	assert(! scoring->stacking());
 
-	if(params->multiloop_deletion_) {
+	if(params->multiloop_deletion_> 0) {
 		// --------------------
 		// Case domain  deletion
 		if (arcB.idx() == bpsB.num_bps()) {
@@ -1342,7 +1353,8 @@ namespace LocARNA {
 				matidx_t ar_prev_mat_idx_pos = mapper_arcsA.number_of_valid_mat_pos(idxA)-1; //TODO: VERY IMPORTNANT: -1 or not?
 
 				seq_pos_t ar_prev_seq_pos = mapper_arcsA.get_pos_in_seq_new(idxA, ar_prev_mat_idx_pos);
-				infty_score_t jumpGapCostA = getGapCostBetween(ar_prev_seq_pos, ar_seq_pos, true);
+				infty_score_t jumpGapCostA = (infty_score_t)sv.scoring()->loop_indel_score(
+						getGapCostBetween(ar_prev_seq_pos, ar_seq_pos, true).finite_value());
 				infty_score_t ia= IAmat(ar_prev_mat_idx_pos,arcB.idx()) + jumpGapCostA;
 
 				if ( sv.D(arcA, arcB) == ia ) {
@@ -1373,14 +1385,10 @@ namespace LocARNA {
 		if (arcA.idx() == bpsA.num_bps()) {
 				fill_IB_entries(arcA, idxB, br_seq_pos);
 				matidx_t br_prev_mat_idx_pos = mapper_arcsB.number_of_valid_mat_pos(idxB)-1; //TODO: VERY IMPORTNANT: -1 or not?
-				std::cout << "br_prev_mat_idx_pos:"<< br_prev_mat_idx_pos << std::endl;
 				seq_pos_t br_prev_seq_pos = mapper_arcsB.get_pos_in_seq_new(idxB, br_prev_mat_idx_pos);
-				std::cout << "br_prev_seq_pos:"<< br_prev_seq_pos << std::endl;
 				infty_score_t jumpGapCostB = getGapCostBetween(br_prev_seq_pos, br_seq_pos, false);
-				std::cout << "jumpGapCostB:"<< jumpGapCostB << std::endl;
 
 				infty_score_t ib= IBmat(arcA.idx(), br_prev_mat_idx_pos) + jumpGapCostB;
-				std::cout << " sv.D(arcA, arcB) ?= ib " << sv.D(arcA, arcB) << "=="<< ib << std::endl;
 				if ( sv.D(arcA, arcB) == ib ) {
 					if (trace_debugging_output) std::cout << "     trace_D domain insertion" << std::endl;
 
@@ -1734,7 +1742,7 @@ namespace LocARNA {
 	const ArcIdxVec& arcsA = mapper_arcsA.valid_arcs_right_adj(idxA, i_index);
 	const ArcIdxVec& arcsB = mapper_arcsB.valid_arcs_right_adj(idxB, j_index);
 
-	if(params->multiloop_deletion_) {
+	if(params->multiloop_deletion_> 0) {
 		//  domain ins/del
 		//domain deltion
 		for (ArcIdxVec::const_iterator arcAIdx = arcsA.begin();
@@ -1747,15 +1755,16 @@ namespace LocARNA {
 			mapper_arcsA.get_pos_in_seq_new(idxA, arcA_left_index_before);
 
 			score_t opening_cost_A = 0;
-			if (arcA_left_seq_pos_before < (arcA.left() - 1)) {
-			// implicit base deletion because of sparsification
-			score_t opening_cost_A = sv.scoring()->indel_opening();
-			}
+//			if (arcA_left_seq_pos_before < (arcA.left() - 1)) {
+//			// implicit base deletion because of sparsification
+//			score_t opening_cost_A = sv.scoring()->indel_opening();
+//			}
 
 			Arc empty_arcB = BasePairs__Arc(bpsB.num_bps(), 0, 0);
 			sv.scoring()->set_closing_arcs(traceback_closing_arcA, traceback_closing_arcB);
 
-			infty_score_t arc_indel_score_open = getGapCostBetween( arcA_left_seq_pos_before, arcA.left(), true) +
+			infty_score_t arc_indel_score_open = (infty_score_t)scoring->loop_indel_score(
+					getGapCostBetween( arcA_left_seq_pos_before, arcA.left(), true).finite_value()) +
 			sv.D(arcA, empty_arcB) + sv.scoring()->arcDel(arcA, true)
 			 + sv.scoring()->indel_opening_loop();
 
@@ -1797,10 +1806,10 @@ namespace LocARNA {
 			mapper_arcsB.get_pos_in_seq_new(idxB, arcB_left_index_before);
 
 			score_t opening_cost_B = 0;
-			if (arcB_left_seq_pos_before < (arcB.left() - 1)) {
-			// implicit base deletion because of sparsification
-			score_t opening_cost_B = sv.scoring()->indel_opening();
-			}
+//			if (arcB_left_seq_pos_before < (arcB.left() - 1)) {
+//			// implicit base deletion because of sparsification
+//			score_t opening_cost_B = sv.scoring()->indel_opening();
+//			}
 
 			Arc empty_arcA = BasePairs__Arc(bpsA.num_bps(), 0, 0);
 			sv.scoring()->set_closing_arcs(traceback_closing_arcA, traceback_closing_arcB);
