@@ -1,6 +1,6 @@
 /*------------------------------------------------------------
 
-  Copyright (C) 1999 by Sebastian Will.
+  Copyright (C) 1999-2016 by Sebastian Will.
   All Rights Reserved.
 
   Permission to use, copy, modify, and distribute this
@@ -19,11 +19,11 @@
 
   ------------------------------------------------------------*/
 
-/************************************************************
+/* ***********************************************************
  *
  * options -- an interface for getopt_long
  *
- ************************************************************/
+ * ***********************************************************/
 
 #include "options.hh"
 #include "aux.hh"
@@ -32,6 +32,7 @@
 #include <cstdio>
 #include <cassert>
 
+#include <sstream>
 
 #include <iostream>
 #include <vector>
@@ -40,14 +41,9 @@
 
 namespace LocARNA {
 
-    //! size of buffer for error message
-#define MYBUFSIZ 1024
+    //! string holding for error message
+    std::string O_error_msg;
 
-    //! string buffer for error message
-    char O_error_msg_buffer[MYBUFSIZ];
-
-    //! pointer to string buffer for error message
-    char *O_error_msg=O_error_msg_buffer;
 
     /* prototypes */
 
@@ -73,41 +69,38 @@ namespace LocARNA {
     int count_opts(option_def *options);
 
     /**
-     * Print option name to string buffer
+     * Write option name to string
      *
-     * @param buf String buffer
      * @param options options array
      * @param i index of option to be printed
      *
-     * @return pointer to string buffer
+     * @return option string
      */
-    char *sprint_option_name(char *buf,option_def *options,int i);
+    std::string
+    sprint_option_name(option_def *options,int i);
 
     /**
-     * Print an option as xml in Galaxy Wrapper format to string buffer
+     * Write an option as xml in Galaxy Wrapper format to string
      *
-     * @param buf String buffer
      * @param options options array
      * @param i index of option to be printed
      *
-     * @return pointer to string buffer
+     * @return xml option string
      */
-    char *sprint_option_xml(char *buf,option_def *options,int i);
+    std::string
+    sprint_option_xml(option_def *options,int i);
 
     /**
      * Print option name to string buffer, marking whether it is optional by []
      *
-     * @param buf String buffer
      * @param options options array
      * @param i index of option to be printed
      *
-     * @return pointer to string buffer
+     * @return option string
      */
-    char *sprint_option_name_opt(char *buf,option_def *options,int i);
-
-    char buf[MYBUFSIZ]; //!< buffer used for constructing small strings
-
-
+    std::string
+    sprint_option_name_opt(option_def *options,int i);
+    
     /**
      * \brief process options
      *
@@ -194,7 +187,7 @@ namespace LocARNA {
 					options[i].arg_type,
 					options[i].deflt);
 		    if (!success) {
-			printf("INTERNAL ERROR. Option --%s: parsing of default argument failed\n",options[i].longname.c_str());
+			fprintf(stderr,"INTERNAL ERROR. Option --%s: parsing of default argument failed\n",options[i].longname.c_str());
 			throw(failure(""));
 		    }
 		}
@@ -241,9 +234,11 @@ namespace LocARNA {
 
 		    if (!success) {
 			if (c==0) { // options[index].longname != ""
-			    snprintf(O_error_msg,MYBUFSIZ,"Cannot parse argument of option --%s.\n",options[index].longname.c_str());
+			    O_error_msg = "Cannot parse argument of option --"
+                                + options[index].longname;
 			} else {
-			    snprintf(O_error_msg,MYBUFSIZ,"Cannot parse argument of option -%c.\n",c);
+			    O_error_msg = "Cannot parse argument of option -";
+                            O_error_msg += c;
 			}
 			return FALSE;
 		    }
@@ -264,14 +259,14 @@ namespace LocARNA {
 					options[i].arg_type,
 					argv[optind]);
 		    if (!success) {
-			snprintf(O_error_msg,MYBUFSIZ,"Cannot parse argument no option argument.");
+			O_error_msg = "Cannot parse argument no option argument.";
 			return FALSE;
 		    }
 		    optind++;
 		}
 
 	if (optind != argc) {
-	    snprintf(O_error_msg,MYBUFSIZ,"Too many arguments.\n");
+	    O_error_msg = "Too many arguments.";
 	    return FALSE;
 	}
 
@@ -282,14 +277,16 @@ namespace LocARNA {
 		&& is_set[i]        == FALSE
 		&& options[i].flag  == 0)
 		{
-		    char *head=(char *)"Mandatory option and/or argument missing: ";
+		    std::string head = "Mandatory option and/or argument missing: ";
 		    if (options[i].longname!="")
-			snprintf(O_error_msg,MYBUFSIZ,"%s--%s\n",head,options[i].longname.c_str());
+			O_error_msg = head + "--" + options[i].longname;
 		    else if (options[i].shortname)
-			snprintf(O_error_msg,MYBUFSIZ,"%s-%c\n",head,options[i].shortname);
+			O_error_msg = head + "-" + options[i].shortname;
 		    else
-			snprintf(O_error_msg,MYBUFSIZ,"%s<%s>\n",head,
-				 (options[i].argname!="")?options[i].argname.c_str():"param");
+			O_error_msg=
+                            head + "<" + 
+                            ((options[i].argname!="")?options[i].argname.c_str():"param")
+                            + ">";
 		    return FALSE;
 		}
 
@@ -328,45 +325,45 @@ namespace LocARNA {
 	for (i=0; i < num_opts; ++i) {
 	    if (options[i].arg_type > O_SECTION) {
 		if (!hide_options) {
-		    printf("  %-32s ", sprint_option_name(buf,options,i));
+		    printf("  %-32s ", sprint_option_name(options,i).c_str());
 
 		    if (options[i].flag!=0
 			&& options[i].argument==0)
 			{
-			    printf((bool)(*options[i].flag)?"ON":"OFF");
+			    fputs((bool)(*options[i].flag)?"ON":"OFF", stdout);
 			} else {
 			if (options[i].flag==0 || *options[i].flag) {
-			    printf("= ");
+			    fputs("= ", stdout);
 			    if (options[i].argument)
 				switch (options[i].arg_type) {
 				case O_ARG_STRING:
-				    printf ("\"%s\"",
-                                            ((std::string *)options[i].argument)->c_str());
+				    printf("\"%s\"",
+                                           ((std::string *)options[i].argument)->c_str());
 				    break;
 				case O_ARG_INT:
-				    printf ("%d",*((int*)(options[i].argument)));
+				    printf("%d",*((int*)(options[i].argument)));
 				    break;
 				case O_ARG_FLOAT:
-				    printf ("%f",*((float*)(options[i].argument)));
+				    printf("%f",*((float*)(options[i].argument)));
 				    break;
 				case O_ARG_DOUBLE:
-				    printf ("%f",*((double*)(options[i].argument)));
+				    printf("%f",*((double*)(options[i].argument)));
 				    break;
 				case O_ARG_BOOL:
-				    if (*((bool*)(options[i].argument))) printf("true");
-				    else printf("false");
+				    if (*((bool*)(options[i].argument))) fputs("true", stdout);
+				    else fputs("false", stdout);
 				    break;
 				default:
-				    printf ("has unknown type");
+				    fputs("has unknown type", stdout);
 				}
 			    else {
-				printf("ON");
+				fputs("ON", stdout);
 			    }
 			} else {
-			    printf("-");
+			    fputs("-", stdout);
 			}
 		    }
-		    printf("\n");
+		    fputs("\n", stdout);
 		} // end if (!hide_options)
 	    } else { //NEW SECTION
 		hide_options = (options[i].arg_type == O_SECTION_HIDE);
@@ -392,19 +389,20 @@ namespace LocARNA {
 
 	num_opts=count_opts(options);
 
-	printf("%s ", progname);
+	printf("USAGE: %s ", progname);
 
 	for (i=0; i < num_opts; ++i) {
 	    /* options and no options*/
 	    if (options[i].arg_type>O_SECTION) {
 		if (!hide_options) {
-		    printf("%s",sprint_option_name_opt(buf,options,i));
+		    fputs(sprint_option_name_opt(options,i).c_str(), stdout);
 		}
 	    } else {
 		hide_options = (options[i].arg_type == O_SECTION_HIDE);
-		if (!hide_options) printf(" ");
+		if (!hide_options) fputs(" ", stdout);
 	    }
 	}
+        fputs("\n", stdout);
     }
 
     void
@@ -419,11 +417,10 @@ namespace LocARNA {
         printf("<!-- Galaxy wrapper for *%s* of the package *%s*\n-->",
                progname,PACKAGE_STRING);
         printf("<!-- Automatically generated by %s (option galaxy-xml)\n-->",progname);
-        printf("<!-- Please do NOT edit the generated wrapper.\n-->");
+        fputs("<!-- Please do NOT edit the generated wrapper.\n-->", stdout);
         printf("<!-- Source repository: %s\n-->\n\n",PACKAGE_VCS);
 
-    	printf(
-               "<tool id=\"%s\" name=\"%s\" version=\"%s\">\n"
+    	printf("<tool id=\"%s\" name=\"%s\" version=\"%s\">\n"
                "    <requirements>\n"
                "        <requirement type=\"package\" version=\"%s\">%s</requirement>\n"
                "    </requirements>\n"
@@ -436,18 +433,18 @@ namespace LocARNA {
 
     	//======================================================================
     	// print commands
-    	printf("    <command><![CDATA[\n");
+    	fputs("    <command><![CDATA[\n", stdout);
     	printf("%s\n", progname);
-    	printf ("        '$input1'\n"
-                "        '$input2'\n"
-                "        --clustal '$clustal_output'\n"
-                );
+    	fputs("        '$input1'\n"
+             "        '$input2'\n"
+             "        --clustal '$clustal_output'\n"
+             , stdout);
         
     	for (i=0; i < num_opts; ++i) {
             /* options and no options*/
             if (options[i].arg_type==O_SECTION) {
                 if (is_if_open) {
-                    printf("        #end if\n");
+                    fputs("        #end if\n", stdout);
                     is_if_open = false;
                 }
                 if (options[i].description == "cmd_only" ||
@@ -480,26 +477,26 @@ namespace LocARNA {
 
                 printf("            --%s    $%s.%s", options[i].longname.c_str(),
                        category.c_str(), longname.c_str());
-                printf("\n");
+                fputs("\n", stdout);
             }
     	}
         if (is_if_open) {
-            printf("        #end if\n");
+            fputs("        #end if\n", stdout);
         }
-    	printf ("]]></command>\n");
+    	fputs("]]></command>\n", stdout);
 
     	//======================================================================
     	// print parameters
     	ignore_category = false;
     	bool is_conditional_open = false;
 
-        printf ("<inputs>\n");
+        fputs("<inputs>\n", stdout);
 
         // Find input files and write respective fields at the top
     	for (i=0; i < num_opts; ++i) {
             if (options[i].description.substr(0, 10) == "Input file") {
-                printf("    %s ",sprint_option_xml(buf,options,i));
-                printf("\n");
+                printf("    %s ",sprint_option_xml(options,i).c_str());
+                fputs("\n", stdout);
             }
         }
         
@@ -509,7 +506,7 @@ namespace LocARNA {
             if (options[i].arg_type==O_SECTION ||
                 options[i].arg_type==O_SECTION_HIDE) {
                 if (is_conditional_open) {
-                    printf("    </section>\n");
+                    fputs("    </section>\n", stdout);
                     is_conditional_open = false;
                 }
                 // Hidden section, Input files and cmd_only not needed condition
@@ -537,53 +534,95 @@ namespace LocARNA {
             }
             else if (options[i].arg_type>O_SECTION && !ignore_category &&
                      options[i].longname != "clustal") {
-                printf("        %s ",sprint_option_xml(buf,options,i));
-                printf("\n");
+                printf("        %s ",sprint_option_xml(options,i).c_str());
+                fputs("\n", stdout);
             }
     	}
 
         if (is_conditional_open) {
-            printf("    </section>\n");
+            fputs("    </section>\n", stdout);
         }
-        printf(
-               "    </inputs>\n"
-               "    <outputs>\n"
-               "        <data format=\"clustal\" name=\"clustal_output\" label=\"CLUSTAL outfile \"/>\n"
-               "    </outputs>\n"
-               );
+        fputs("    </inputs>\n"
+             "    <outputs>\n"
+             "        <data format=\"clustal\" name=\"clustal_output\" label=\"CLUSTAL outfile \"/>\n"
+             "    </outputs>\n", stdout);
 
         //======================================================================
     	// print tests
 
-        printf ("    <tests>\n"
-                "    <!-- *******PUT TESTS HERE******** -->\n"
-                "    </tests>\n"
-                "\n"
-                );
+        fputs("    <tests>\n"
+             "    <!-- *******PUT TESTS HERE******** -->\n"
+             "    </tests>\n"
+             "\n", stdout);
 
         //======================================================================
         // print help
-       	printf("    <help><![CDATA[\n");
+       	fputs("    <help><![CDATA[\n", stdout);
        	printf("This tool is part of the package %s - %s.\n\n",
                PACKAGE_NAME,
                PACKAGE_SHORT_DESCRIPTION);
         printf("%s\n\n",PACKAGE_LONG_DESCRIPTION);
-       // printf("Please find the online documentation at\n"
-       //       ".. __: %s\n\n",PACKAGE_URL);
-       // printf("The software package is available for download at\n"
-       //        ".. __: %s\n"
-       //        ,PACKAGE_URL);
-       	printf("    ]]></help>\n\n");
+        printf("Please find the online documentation at\n"
+               ".. __: %s\n\n",PACKAGE_URL);
+        printf("The software package is available for download at\n"
+               ".. __: %s\n"
+               ,PACKAGE_URL);
+       	fputs("    ]]></help>\n\n", stdout);
 
-       	printf("    <citations>\n"
+
+       	fputs("    <citations>\n"
                "        <citation type=\"doi\">10.1371/journal.pcbi.0030065</citation>\n"
                "        <citation type=\"doi\">10.1093/bioinformatics/btv185</citation>\n"
                "        <citation type=\"doi\">10.1186/s12859-014-0404-0</citation>\n"
                "    </citations>\n"
-               "</tool>\n");
+               "</tool>\n", stdout);
 
     }
 
+    void
+    print_wrapped(std::string s,
+                  size_t offset,
+                  size_t width) {
+        size_t tolerance=10;
+
+        std::string t;
+        if (offset + s.length() > width) {
+            t=s.substr(0,width-offset);
+            s=s.substr(width-offset);
+            
+            bool goodsep=false;
+
+            if (s[0]!=' ') {
+                size_t pos = t.rfind(' ');
+                if (pos+1==t.length()){
+                    goodsep=true;
+                } else if (pos+tolerance>t.length()) {
+                    s=t.substr(pos+1)+s;
+                    t=t.substr(0,pos);
+                    goodsep=true;
+                }
+            } else {
+                s=s.substr(1);
+                goodsep=true;
+            }
+            
+            if (!goodsep) {
+                t=t+"\\";
+                s=""+s;
+            }
+        } else {
+            t=s;
+            s="";
+        }
+        fputs(t.c_str(),stdout);
+        
+        if (s.length() > 0) {
+            fputs("\n", stdout);
+            fputs(std::string(offset,' ').c_str(), stdout);
+            print_wrapped(s,offset,width);
+        }
+        return;
+    }
 
 
     /**
@@ -599,69 +638,74 @@ namespace LocARNA {
 	int i;
 	int num_opts = count_opts(options);
 
-	printf("Usage: "); 
 	print_usage(progname, options); 
-	puts("\n");
 
-	puts("Options:");
+	fputs("\nOptions:\n", stdout);
 
 	for (i=0; i<num_opts; i++) {
 	    if (options[i].arg_type>O_SECTION) {
 		if (!hide_options) {
-		    printf("    %-33s ",sprint_option_name(buf,options,i));
-
-		    if (options[i].description!="")
-			printf("%s",options[i].description.c_str());
-
-		    printf("\n");
+                   size_t offset=5+3;
+                   size_t width=77;
+		    if (((size_t)printf("  %-5s ",sprint_option_name(options,i).c_str())) > offset) {
+                        fputs("\n",stdout);
+                        fputs(std::string(offset,' ').c_str(), stdout);
+                    }
+		    if (options[i].description!="") {
+                        print_wrapped(options[i].description,offset,width);
+                    }
+		    fputs("\n\n", stdout);
 		}
 	    } else { //NEW SECTION
 		hide_options = (options[i].arg_type == O_SECTION_HIDE);
 
 		if (!hide_options) {
-		    puts("");
-		    printf("%s:\n",options[i].description.c_str());
+                    printf("\n%s:\n",options[i].description.c_str());
 		}
 	    }
 	}
-	puts("");
+	fputs("\n", stdout);
     }
 
     /************************************************************/
 
 
-    char *sprint_option_name(char *buf,option_def *options,int i) {
-	char *start=buf;
-	if (options[i].shortname) buf += sprintf(buf,"-%c",options[i].shortname);
-	if (options[i].shortname && (options[i].longname!="")) buf += sprintf(buf,",");
-	if (options[i].longname!="") buf += sprintf(buf,"--%s",options[i].longname.c_str());
+    std::string
+    sprint_option_name(option_def *options,int i) {
+	std::ostringstream s;
+	
+        if (options[i].shortname) s<<"-"<<options[i].shortname;
+	if (options[i].shortname && (options[i].longname!="")) s<<",";
+	if (options[i].longname!="") s<<"--"<<options[i].longname;
 
 	if (options[i].argument) {
-	    if (options[i].longname!="") buf+=sprintf(buf,"=");
-	    buf += sprintf(buf,"<%s>",
-                           (options[i].argname!="")?options[i].argname.c_str():"param");
+	    if (options[i].longname!="") s<<"=";
+	    s << "<"
+              << ((options[i].argname!="")?options[i].argname.c_str():"param")
+              << ">";
+                           
 	    if (options[i].deflt!=O_NODEFAULT) {
-                sprintf(buf,"(%s)",options[i].deflt.c_str());
+                s << "("
+                  << options[i].deflt.c_str()
+                  << ")";
             }
         }
-	return start;
+	return s.str();
     }
 
 
-    char *sprint_option_xml(char *buf,option_def *options,int i) {
-    	// <param name="temperature" size="6" type="float" value="37.0" label="Temperature [°C]" help="-T"/>
-
-    	char *start=buf;
-
-
-    	buf += sprintf(buf,"%s ","<param ");
-    	//    	if (options[i].shortname) buf += sprintf(buf,"-%c",options[i].shortname);
-    	//    	if (options[i].shortname && (options[i].longname!="")) buf += sprintf(buf,",");
+    std::string
+    sprint_option_xml(option_def *options,int i) {
+        std::ostringstream s;
+        
+    	s << "<param ";
 
     	if (options[i].longname=="" && options[i].argname.substr(0, 5)=="input")  // Input files
             {
-    		buf += sprintf(buf,"name=\"%s\" ",options[i].argname.c_str());
-    		buf += sprintf(buf,"type=\"data\" format=\"fasta,clustal\" "); //TODO: support pp 2.0
+    		s << "name=\""
+                  << options[i].argname
+                  << "\" ";
+    		s << "type=\"data\" format=\"fasta,clustal\" "; //TODO: support pp 2.0
             }
     	else {  // Other params
             if (options[i].longname!="")
@@ -671,54 +715,65 @@ namespace LocARNA {
                     // replace all "-" in name with "_"
                     while ((longname.find("-")) != std::string::npos )
                         longname.replace(longname.find("-"), 1, "_");
-                    buf += sprintf(buf,"name=\"%s\" ", longname.c_str());
+                    s << "name=\""
+                      << longname
+                      << "\" ";
                 }
             if (options[i].argument) {
-                //    	    buf += sprintf(buf,"type=\"%s\" ", (options[i].argname!="")?options[i].argname.c_str():"param");
-                buf += sprintf(buf,"type=\"%s\" ", convert_arg_type(options[i].arg_type));
+                s << "type=\""
+                  << convert_arg_type(options[i].arg_type)
+                  << "\" ";
 
                 if (options[i].deflt==O_NODEFAULT) {
-                    buf += sprintf(buf,"optional=\"True\" ");
+                    s << "optional=\"True\" ";
                 }
                 else {
-                    buf += sprintf(buf,"value=\"%s\" ", options[i].deflt.c_str());
-
+                    s << "value=\""
+                      << options[i].deflt
+                      << "\" ";
                 }
             }
             else {  // O_NO_ARG
-                buf += sprintf(buf,"type=\"boolean\" checked=\"false\" truevalue=\"--%s\" falsevalue=\"\" ", options[i].longname.c_str());
-
+                s << "type=\"boolean\" checked=\"false\" truevalue=\"--"
+                  << options[i].longname
+                  << "\" falsevalue=\"\" ";
             }
     	}
 
         if (options[i].description!="")
-            buf += sprintf(buf, "label=\"%s\" ",options[i].description.c_str());
+            s << "label=\""
+              << options[i].description
+              << "\" ";
 
-    	sprintf(buf,"%s","/>");
+    	s << "/>";
         
-    	return start;
+    	return s.str();
     }
 
-    char *sprint_option_name_opt(char *buf,option_def *options,int i) {
-	char *start=buf;
-	bool mandatory = options[i].flag==0 && (options[i].deflt!=O_NODEFAULT) ;
+    std::string
+    sprint_option_name_opt(option_def *options,int i) {
+	std::ostringstream s;
 
-	buf += sprintf(buf," ");
+	bool mandatory = options[i].flag==0 && (options[i].deflt!=O_NODEFAULT);
 
-	if (!mandatory) buf += sprintf(buf,"[");
+	s<<" ";
 
-	if (options[i].shortname) buf += sprintf(buf,"-%c",options[i].shortname);
-	if (options[i].shortname && (options[i].longname!="")) buf += sprintf(buf,",");
-	if (options[i].longname!="") buf += sprintf(buf,"--%s",options[i].longname.c_str());
+	if (!mandatory) s << "[";
+
+	if (options[i].shortname) s << "-" << options[i].shortname;
+	if (options[i].shortname && (options[i].longname!="")) s << ",";
+	if (options[i].longname!="") s << "--" << options[i].longname.c_str();
 
 	if (options[i].argument) {
-	    if (options[i].longname!="") buf+=sprintf(buf,"=");
-	    buf += sprintf(buf,"<%s", (options[i].argname!="")?options[i].argname.c_str():"param");
-	    buf += sprintf(buf,">");
+	    if (options[i].longname!="") s << "=";
+	    s << "<" 
+              << ((options[i].argname!="")?options[i].argname.c_str():"param")
+	      << ">";
 	}
 
-	if (!mandatory) sprintf(buf,"]");
-	return start;
+	if (!mandatory) s << "]";
+
+	return s.str();
     }
 
 

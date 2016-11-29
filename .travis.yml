@@ -1,33 +1,55 @@
+sudo: false
 language: cpp
-
 compiler:
-  - gcc 
+  - gcc
   - clang
 
-before_install:
-  # for gcc 5
-  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-  # for clang
-  - sudo add-apt-repository -y ppa:h-rayflood/llvm-upper
-  # for vrna
-  - sudo apt-add-repository -y ppa:j-4/vienna-rna
-
-  # update package list
-  - sudo apt-get update -q -y
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - gcc-4.8
+    - g++-4.8
+    - clang
+    - help2man
+    - libgsl0-dev
 
 install:
-  - sudo apt-get install -qq viennarna viennarna-dev
-  - sudo apt-get install -qq help2man
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
 
-  # g++-5
-  #- if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-5; fi
-  #- if [ "$CXX" = "g++" ]; then export CXX="g++-5"; fi
+  # install conda to install build requirements
+  - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+  - chmod +x miniconda.sh
+  - "./miniconda.sh -b"
+  - export CONDA_PATH=$HOME/miniconda3
+  - export PATH=$CONDA_PATH/bin:$PATH
+  - conda update --yes conda
+  - conda install --yes -c bioconda viennarna gcc
 
-  # clang 3.6
-  - if [ "$CXX" == "clang++" ]; then sudo apt-get install --allow-unauthenticated -y clang-3.6; fi
-  - if [ "$CXX" == "clang++" ]; then export CXX="clang++-3.6"; fi
+  # don't use libc++ for now
+  # - if [ "$CXX" == "clang++" ]; then export CXXFLAGS="--stdlib=libc++" ; fi
 
 before_script:
-  - autoreconf -i
+- autoreconf -i
 
-script: ./configure --enable-STDC=no && make -j4 && make -j4 check
+script: 
+- ./configure --with-vrna=${CONDA_PATH}
+- make -j${CPU_COUNT}
+- make -j${CPU_COUNT} check
+- make dist-gzip
+
+before_deploy:
+  - export DIST_GZIP=$(ls locarna-*.tar.gz)
+  - echo "Deploying autoconf's ${DIST_GZIP} to GitHub releases"
+
+deploy:
+  provider: releases
+  api_key:
+    secure: rHvVz0u8eLMD/m95NscWxqrvQJcwzoWqDU2FVg0toURBjzsPCYa/7t4s1Pu26ycCXW9fOc2UEJhQ60AVHuMFIM9n7EFJEqygZPZXs+Is6lFlQXphN8frWa2xb7gi25LvxH/mnd+XWIZdCTUT7us1rk9msXn48y7S9sR4qSIq8ibwB/5ZwtGCR9fybfdx4mhkIloUTGKjSslsFpwTjVLx/Ch1F3yULANMvaS8gwS7pE0d4Ci6HPFO7vi7QRtGJmtmeSvm+pNpriZ7oe/YUA+EWMWDRKyJQI2diM0j+V2YLcNB60Z2BO0L5My8Gre++pIwSgjd+uTy/p7Nwy8w8BT6LKSlwHwAM/lPd8JAzGoN+yBKEHUwJcnIfeGbG5RVgSNFn+8SOsECvy15JncMb+1rFLp3GrTCJhV+JSU6zvFLMZ9LzlKB8ARKZd9DrSW39zDWO6HRO53HMM6M5hjWV+msGYexQjmqRSc/U8nxYwtNziVJy2ndbp40eZnMMF9J8vMy/sWQy1U44amcIj+J+N8jc9rfIRx3/R559udCgYx+Tpn6GJVXd71ruLAWChVDWGE06kHHKgG8aljpZMUbwjG50Af3XyGLuuOBSMV2q7YDgQLkY9veSfhj6Znf9gQijRypLy6GJYAwVet8+MttYdN/sAjIqBZl9plLhJg3MXJtSfw=
+  skip_cleanup: true
+  file_glob: true
+  file: "${DIST_GZIP}"
+  on:
+    repo: s-will/LocARNA
+    tags: true
