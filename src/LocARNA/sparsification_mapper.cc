@@ -13,7 +13,7 @@ void SparsificationMapper::compute_mapping_idx_arcs(){
 		//pos_type max_size = 0;
 		struct_pos.reset();
 		const Arc &arc = bps.arc(k);
-		std::cout << "compute_mapping_idx_arc: arc " << arc << std::endl;
+		//std::cout << "compute_mapping_idx_arc: arc " << arc << std::endl;
 		//add initialization
 		struct_pos.unpaired=true;
 		struct_pos.seq_pos=arc.left();

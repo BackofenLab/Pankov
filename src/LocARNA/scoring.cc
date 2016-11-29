@@ -672,7 +672,7 @@ namespace LocARNA {
 
 
 //			std::cout << "sequence_contribution: " << sequence_contribution << std::endl;
-		double cond_zero_penalty = -9.21; // ~=ln(0.0001)
+		double cond_zero_penalty = -5; //-9.21; // ~=ln(0.0001)
 		double scoreA = cond_zero_penalty;
 		double scoreB = cond_zero_penalty;
 
@@ -718,11 +718,11 @@ namespace LocARNA {
 				 (closingB.left() == 0 && closingB.right() == seqB.length()+1))
 				 {
 
-			 return (score_t)(params->struct_weight * (4+scoreA+scoreB))+( (params->tau_factor * sequence_contribution) / 100 );
+			 return (score_t)(params->struct_weight * (3+scoreA+scoreB))+( (params->tau_factor * sequence_contribution) / 100 );
 		 }
 		 else
 		 {
-			 return (score_t)(params->struct_weight * (4+scoreA+scoreB))+( (params->tau_factor * sequence_contribution) / 100 );
+			 return (score_t)(params->struct_weight * (3+scoreA+scoreB))+( (params->tau_factor * sequence_contribution) / 100 );
 		 }
 
 //		 return  + log (joint_probB/prob_closingB);
@@ -855,7 +855,7 @@ namespace LocARNA {
 				" closingX:" << closingX << "=" << prob_closingX <<
 				" jointX: " <<  joint_probX<< std::endl;
     	 */
-		 double cond_zero_penalty = -9.21; // ~=ln(0.0001)
+		 double cond_zero_penalty = -5; //-9.21; // ~=ln(0.0001)
 		 double scoreX = cond_zero_penalty;
 
 		 if (closingX.left() == 0 && closingX.right() == seqX.length()+1) { //TODO: And or OR?
@@ -875,11 +875,11 @@ namespace LocARNA {
 
 		 if (closingX.left() == 0 && (closingX.right() == seqX.length()+1))
 		 {
-			 return (score_t)(params->struct_weight * (2+scoreX));
+			 return (score_t)(params->struct_weight * (1.5+scoreX));
 		 }
 		 else
 		 {
-			 return (score_t)(params->struct_weight * (2+scoreX));
+			 return (score_t)(params->struct_weight * (1.5+scoreX));
 		 }
 
     }

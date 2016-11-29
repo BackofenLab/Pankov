@@ -375,7 +375,7 @@ public:
 			double joint_prob = rnadata.unpaired_in_loop_prob(pos,arc.left(),arc.right());
 			if (outer_prob == 0)
 				return false;
-			return (joint_prob/outer_prob >= 0.001) ;
+			return (joint_prob/outer_prob >= 0.0001) ;
 		}
 		else
 			return rnadata.unpaired_in_loop_prob(pos,arc.left(),arc.right())>=prob_unpaired_in_loop_threshold; //todo: additional variable for external case
