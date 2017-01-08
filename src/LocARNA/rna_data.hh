@@ -22,6 +22,7 @@ namespace LocARNA {
     class RnaDataImpl;
     class PFoldParams;
     class SequenceAnnotation;
+    class RnaStructure;
     
     /**
      * @brief represent sparsified data of RNA ensemble
@@ -87,7 +88,18 @@ namespace LocARNA {
 	 * istream::seekg(0) to reset stream to beginning (needed for
 	 * format autodetect.) Is there a problem due to fail on
 	 * eofbit in C++98?
-	 */
+         *
+         * @todo filter by maxBPspan when reading base pair probabilities from file.
+         * currently maxBPspan in pfoldparams is only respected when folding  
+         *
+         * @note If probabilities have to be computed by folding the
+         * input sequence(s), folding is subject to the parameters
+         * pfoldparams. Also when reading ensemble probabilities from
+         * file, the outcome depends on settings in pfoldparams
+         * (stacking, max_bp_span). Without stacking, stacking probs
+         * are ignored and max_bp_span is used to filter the base
+         * pairs by their maximum span.
+         */
 	RnaData(const std::string &filename,
 		double p_bpcut,
 		double max_bps_length_ratio,
@@ -126,9 +138,11 @@ namespace LocARNA {
 	 * @brief Almost empty constructor
 	 * 
 	 * @param p_bpcut cutoff probability
-	 */
+	 * @param max_bp_span maximum base pair span
+         */
 	explicit
-        RnaData(double p_bpcut);
+        RnaData(double p_bpcut,
+                size_t max_bp_span);
 	
     private:
 	/**
@@ -341,25 +355,30 @@ namespace LocARNA {
 	 * @brief initialize from fixed structure
 	 * 
 	 * @param structure fixed structure
-	 * @param stacking whether to initialize stacking terms
-	 *
-	 * @note can be overloaded to initialize with additional
+	 * @param pfoldparams folding parameters
+         *  - stacking: whether to initialize stacking terms
+         *
+         * @note can be overloaded to initialize with additional
 	 * information (in loop probabilities)
 	 */
 	virtual
 	void
-	init_from_fixed_structure(const SequenceAnnotation &structure,
-				  bool stacking);
+	init_from_fixed_structure(const RnaStructure &structure,
+                                  const PFoldParams &pfoldparams);
 
 	/** 
 	 * @brief initialize from rna ensemble 
 	 * 
 	 * @param rna_ensemble rna ensemble
-	 * @param stacking whether to initialize stacking terms
-	 * 
+	 * @param pfoldparams folding parameters
+         *  - stacking: whether to initialize stacking terms
+         *
 	 * @note can be overloaded to initialize with additional
 	 * information (in loop probabilities)
-	 */
+	 *
+         * @note this method *never* removes lonely or too long base
+         * pairs (according to noLP or maxBPspan, resp.)
+         */
 	virtual
 	void
 	init_from_rna_ensemble(const RnaEnsemble &rna_ensemble,
@@ -370,16 +389,26 @@ namespace LocARNA {
 	 * @brief read and initialize from file, autodetect format
 	 * 
 	 * @param filename name of input file
-	 * @param stacking whether to read stacking terms
+	 * @param pfoldparams folding parameters
+         *  - stacking: whether to initialize stacking terms
+         *  - max_bp_span: maximum base pair span
 	 *
 	 * @return whether probabilities were read completely
 	 *
 	 * @note: this method is designed such that it can be used for
 	 * RnaData and ExtRnaData
-	 */
+	 *
+         * @note the method delegates actual reading to methods
+         * read_pp(), read_old_pp(), read_ps(), and the
+         * MultipleAlignment class.
+         * 
+         * @note when reading in, base pairs exceeding max_bp_span_ or
+         * structure information below the probability thresholds are
+         * ignored (which is -in part- job of the delegates).
+         */
 	bool
 	read_autodetect(const std::string &filename,
-			bool stacking);
+			const PFoldParams &pfoldparams);
 		
 	/**
 	 * @brief check in loop probabilities
@@ -452,8 +481,10 @@ namespace LocARNA {
 	 * @note handling of stacking: after the call, has_stacking_
 	 * is true only if the file specified at least one stacking
 	 * probability and has_stacking_ was true before.
-	 */
-	void
+	 *
+         * @todo move implementation to impl class
+         */
+        void
 	read_old_pp(const std::string &filename);
 
 	/** 
@@ -465,16 +496,13 @@ namespace LocARNA {
 	 * p_bpcut_; reads stacking probabilities only if
 	 * has_stacking_ is true
 	 *
-	 * @note Recently changed behavior: reads sequence name from
-	 * file (instead of guessing from filename!); stacking
-	 * probabilities are read if available (then, sets
-	 * has_stacking_ to true)
+	 * @note reads sequence name from file (instead of guessing
+	 * from filename!); stacking probabilities are read if
+	 * available (then, sets has_stacking_ to true)
 	 *
 	 * @note throws wrong_format exception if not in ps format 
 	 *
-	 * @note reading dot plot ps format is extremely fragile since
-	 * the dot plot ps format was designed for viewing not for
-	 * data input 
+         * @todo move implementation to impl class
 	 */
 	void
 	read_ps(const std::string &filename);

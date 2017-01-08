@@ -152,17 +152,9 @@ namespace LocARNA {
                                                 bool inLoopProbs) {
 	assert(sequence_.num_of_rows()==1);
         
-        vrna_md_t md;
-        vrna_md_set_default(&md);
-        //md.backtrack = 0;
-        vrna_fold_compound_t  *vc;       
-
-        // model detail settings for Vienna RNA lib
-        md.noLP = params.noLP()?1:0;
-	assert(params.dangling() >=0 && params.dangling() <=3);
-	md.dangles = params.dangling();
-
-        md.compute_bpp = 1;
+        const vrna_md_t &md = params.model_details();
+        
+        vrna_fold_compound_t *vc;
 
 	// use MultipleAlignment to get pointer to c-string of the
 	// first (and only) sequence in object sequence.
@@ -176,7 +168,7 @@ namespace LocARNA {
 	
 	strcpy(c_sequence,seqstring.c_str());
 	
-        vc  = vrna_fold_compound(c_sequence, &md, VRNA_OPTION_PF);
+        vc  = vrna_fold_compound(c_sequence, &const_cast<vrna_md_t &>(md), VRNA_OPTION_PF);
 	
 	const std::string &structure_anno =
             sequence_.annotation(MultipleAlignment::AnnoType::structure).single_string();
@@ -241,27 +233,22 @@ namespace LocARNA {
     void
     RnaEnsembleImpl::compute_McCaskill_alifold_matrices(const PFoldParams &params,
                                                         bool inLoopProbs) {
-        vrna_md_t md;
-        vrna_md_set_default(&md);
-        //md.backtrack = 0;
+        const vrna_md_t &md = params.model_details();
+        
         vrna_fold_compound_t  *vc;
         
-        // model detail settings for Vienna RNA lib
-	if (params.noLP()) {md.noLP=1;}
-
-	assert(params.dangling() >=0 && params.dangling() <=3);
-	md.dangles = params.dangling();
-
-        md.compute_bpp = 1;
-        
-        // set ribosum scoring with "best" parameters
-        md.ribo = 1;
-        md.cv_fact = 0.6; // cfactor
-        md.nc_fact = 0.5; // nfactor
-
 	size_t length = sequence_.length();
 	size_t n_seq = sequence_.num_of_rows();
 
+        // catch special case of length 0 sequence, since the Vienna
+        // package does not handle this for us -- sad :(
+        if (length==0) {
+	    min_free_energy_ = 0;
+	    min_free_energy_structure_ = "";
+            McCmat_ = 0;
+            return;
+        }
+        
 	// ----------------------------------------
 	// write sequences to array of C-strings
 	MultipleAlignment ma(sequence_);
@@ -275,7 +262,7 @@ namespace LocARNA {
 
 	const char **c_sequences=const_cast<const char **>(sequences);
 
-        vc  = vrna_fold_compound_comparative(c_sequences, &md, VRNA_OPTION_PF);
+        vc  = vrna_fold_compound_comparative(c_sequences, &const_cast<vrna_md_t &>(md), VRNA_OPTION_PF);
         
 	// reserve space for structure
 	char *c_structure = new char [length+1]; 
@@ -306,17 +293,11 @@ namespace LocARNA {
         
 	// ----------------------------------------
 	// call alifold for setting the scale
-	if (length>0) { // don't call alifold for 0 length (necessary
-			// workaround, since alifold cannot handle
-            // empty sequences)
-	    min_free_energy_ = vrna_mfe(vc, c_structure);
-	    min_free_energy_structure_ = c_structure;
-
-            vrna_exp_params_rescale(vc, &min_free_energy_);
-	} else {
-	    min_free_energy_ = 0;
-	    min_free_energy_structure_ = "";
-	}
+        // empty sequences)
+        min_free_energy_ = vrna_mfe(vc, c_structure);
+        min_free_energy_structure_ = c_structure;
+        
+        vrna_exp_params_rescale(vc, &min_free_energy_);
 	
 	// ----------------------------------------
 	// call alifold partition function

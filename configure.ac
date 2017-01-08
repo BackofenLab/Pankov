@@ -2,7 +2,7 @@ dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([LocARNA], [1.8.12], [will@informatik.uni-freiburg.de], [locarna],
+AC_INIT([LocARNA], [1.9.0], [will@informatik.uni-freiburg.de], [locarna],
         [http://www.bioinf.uni-freiburg.de/Software/LocARNA/])
 
 dnl special dir for aux config files 
@@ -10,7 +10,7 @@ AC_CONFIG_AUX_DIR(config)
 
 dnl Define here to keep all version information in one place.
 AC_SUBST([SO_VERSION], [1:0:0])
-AC_SUBST([API_VERSION], [1.5])
+AC_SUBST([API_VERSION], [1.6])
 
 
 dnl Package meta information
@@ -89,7 +89,7 @@ AS_IF([test $cross_compiling = no], [
 AC_CHECK_PROG([POD2MAN],[pod2man],[pod2man],[false])
 
 dnl ----------------------------------------
-dnl doxygen documentation
+dnl generate doxygen documentation in Doxy
 dnl
 
 DX_HTML_FEATURE(ON)
@@ -101,7 +101,7 @@ DX_XML_FEATURE(OFF)
 DX_PDF_FEATURE(OFF)
 DX_PS_FEATURE(OFF)
 
-DX_INIT_DOXYGEN($PACKAGE_NAME, ["Doc/doxygen.cfg"], ["Doc"])
+DX_INIT_DOXYGEN($PACKAGE_NAME, ["Doc/doxygen.cfg"], ["Doxy"])
 dnl ----------------------------------------
 
 
