@@ -327,6 +327,7 @@ option_def my_options[] = {
 
     {"noLP",0,&clp.no_lonely_pairs,O_NO_ARG,0,O_NODEFAULT,"","No lonely pairs"},
     //    {"ignore-constraints",0,&clp.opt_ignore_constraints,O_NO_ARG,0,O_NODEFAULT,"","Ignore constraints in pp-file"},
+    // {"relaxed-anchors",0,&clp.relaxed_anchors,O_NO_ARG,0,O_NODEFAULT,"",clp.help_text["relaxed_anchors"]},
     
 
     {"",0,0,O_SECTION_HIDE,0,O_NODEFAULT,"","Hidden Options"},
@@ -622,14 +623,17 @@ main(int argc, char **argv) {
     
     TraceController trace_controller(seqA,seqB,multiple_ref_alignment,clp.max_diff,clp.opt_max_diff_relax);
     
-    
     // ------------------------------------------------------------
     // Handle constraints (optionally)
     
-    AnchorConstraints seq_constraints(lenA,
-				      seqA.annotation(MultipleAlignment::AnnoType::anchors).single_string(),
-				      lenB,
-				      seqB.annotation(MultipleAlignment::AnnoType::anchors).single_string());
+    AnchorConstraints 
+        seq_constraints(lenA,
+                        seqA.annotation(MultipleAlignment::AnnoType::anchors).single_string(),
+                        lenB,
+                        seqB.annotation(MultipleAlignment::AnnoType::anchors).single_string(),
+                        true);
+    
+    
         
     if (clp.opt_verbose) {
 	if (! seq_constraints.empty()) {
@@ -861,8 +865,6 @@ main(int argc, char **argv) {
 	. max_diff_am(clp.max_diff_am)
 	. max_diff_at_am(clp.max_diff_at_am)
 	. trace_controller(trace_controller)
-	. min_am_prob(clp.min_am_prob)
-	. min_bm_prob(clp.min_bm_prob)
 	. stacking(clp.opt_stacking || clp.opt_new_stacking)
 	. track_closing_bp(clp.opt_track_closing_bp)
 	. multiloop_deletion(clp.opt_multiloop_deletion)

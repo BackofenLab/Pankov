@@ -73,6 +73,7 @@ struct command_line_parameters :
 
     bool special_gap_symbols; //!< whether to use special gap
                                   //!symbols in the alignment result
+    bool track_closing_bp; //!< whether to track right end of a closing basepair
 
     command_line_parameters() 
         : MainHelper::std_command_line_parameters(),
@@ -704,7 +705,7 @@ main(int argc, char **argv) {
 	. max_diff_at_am(clp.max_diff_at_am)
 	. trace_controller(trace_controller)
 	. stacking(clp.stacking || clp.new_stacking)
-	. track_closing_bp(clp.opt_track_closing_bp)
+	. track_closing_bp(clp.track_closing_bp)
 	. constraints(seq_constraints);
     
     infty_score_t score;
@@ -724,7 +725,7 @@ main(int argc, char **argv) {
     //
     if (DO_TRACE) {
 	    
-	if (clp.opt_verbose) {
+	if (clp.verbose) {
 	    std::cout << "Traceback."<<std::endl;
 	}
 	
