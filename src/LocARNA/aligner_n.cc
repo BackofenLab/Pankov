@@ -220,7 +220,6 @@ namespace LocARNA {
             }
             infty_score_t arc_indel_score_extend = IXD(arcX, arcY, isA) +
                 sv.scoring()->arcDel(arcX, isA) + gap_score;
-
             if (arc_indel_score_extend > max_score) {
                 max_score = arc_indel_score_extend;
             }
@@ -318,7 +317,7 @@ namespace LocARNA {
         //	     std::cout << "compute_M_entry al: " << al << " bl: " << bl
         //	 	      << "i:" << i_seq_pos << "/i_index: " << i_index
         //	 	      << " j: " << j_seq_pos << "/j_index:"<< j_index <<
-        //std::endl;
+        //            std::endl;
         //	 }
 
         score_t opening_cost_A = 0;
@@ -422,10 +421,10 @@ namespace LocARNA {
                     M(arcA_left_index_before, arcB_left_index_before);
 
                 //		 if (trace_debugging_output) {
-                //		     std::cout << "gap_match_score:" <<
-                //gap_match_score << std::endl;
-                //		     std::cout << "arc_match_score:" <<
-                //arc_match_score << std::endl;
+                //     std::cout << "gap_match_score:" << gap_match_score <<
+                //     std::endl;
+                //     std::cout << "arc_match_score:" << arc_match_score <<
+                //     std::endl;
                 //		 }
 
                 arc_match_score = std::max(arc_match_score,
@@ -550,11 +549,11 @@ namespace LocARNA {
 
         if (trace_debugging_output)
             std::cout << "fill_IA_entries: "
-                      << "al=" << al << "max_ar=" << max_ar
-                      << " max_right_index: " << max_right_index
-                      << ", arcB=" << arcB << std::endl;
+                      << "al=" << al << "max_ar=" << max_ar << ", arcB=" << arcB
+                      << std::endl;
 
-        for (matidx_t i_index = 1; i_index < max_right_index; i_index++) {
+        for (matidx_t i_index = 1;
+             i_index < max_right_index; i_index++) {
             IAmat(i_index, arcB.idx()) =
                 compute_IX(al, arcB, i_index, true, def_scoring_view);
             //	    std::cout << "      IAmat(" << i_index << "," << arcB.idx()
@@ -576,9 +575,10 @@ namespace LocARNA {
                 //<< std::endl;
             }
         }
-        //	std::cout << "fill_IA_entries al: "<< al << " arcB.idx: " <<
-        //arcB.idx() << " arcB.left: " << arcB.left() << " arcB.right: " <<
-        //arcB.right() << " IAmat: " << std::endl << IAmat << std::endl;
+        //      std::cout << "fill_IA_entries al: "<< al << " arcB.idx: " <<
+        //      arcB.idx() << " arcB.left: " << arcB.left() << " arcB.right: "
+        //      << arcB.right() << " IAmat: " << std::endl << IAmat <<
+        //      std::endl;
     }
 
     // fill IB entries for a row with fixed arcA, bl
@@ -588,7 +588,6 @@ namespace LocARNA {
             std::cout << "fill_IB_entries: "
                       << "arcA=" << arcA << ", bl=" << bl << "max_br=" << max_br
                       << std::endl;
-
         IBmat(arcA.idx(), 0) = infty_score_t::neg_infty;
 
         pos_type max_right_index;
@@ -637,7 +636,7 @@ namespace LocARNA {
             }
         }
         //	std::cout << "fill_IB_entries arcA: " << arcA << " bl: "<< bl <<
-        //" IBmat: " << std::endl << IBmat << std::endl;
+        //      " IBmat: " << std::endl << IBmat << std::endl;
     }
 
     // compute/align matrix M
@@ -1147,8 +1146,7 @@ namespace LocARNA {
                        bl, &max_ar, &max_br,
                                                             params->no_lonely_pairs_);
 
-
-                                            //compute IA
+                // compute IA
                                             //	    stopwatch.start("compIA");
                                             for
                        (BasePairs::LeftAdjList::const_iterator arcB =
@@ -1166,7 +1164,7 @@ namespace LocARNA {
                                             }
                                             //	    stopwatch.stop("compIA");
 
-                                            //comput IB
+                // comput IB
                                             //	    stopwatch.start("compIB");
                                             for
                        (BasePairs::LeftAdjList::const_iterator arcA =
@@ -1336,7 +1334,6 @@ namespace LocARNA {
                 std::cout << "arcX=" << arcX << std::endl;
 
             infty_score_t gap_score = getGapCostBetween(xl, arcX.left(), isA);
-
             if (gap_score.is_finite()) { // convert the base gap score to the
                                          // loop gap score
                 gap_score = (infty_score_t)(
@@ -2084,10 +2081,10 @@ namespace LocARNA {
         //	for (int k = bl+1; k <= j_seq_pos; k++) { //TODO: end gaps cost
         //is not free
         //
-        //	    if ( ((al == r.startA()-1) &&
-        //mapperB.is_valid_pos_external(k))
-        //		    || ( (al != r.startA()-1) && mapperB.is_valid_pos((k))
-        //)
+        //          if ( ((al == r.startA()-1) &&
+        //          mapperB.is_valid_pos_external(k))
+        //                  || ( (al != r.startA()-1) &&
+        //                  mapperB.is_valid_pos((k)) )
         //		alignment.append(-1,k);
         //
         //
@@ -2098,9 +2095,9 @@ namespace LocARNA {
         //	for (int k = al+1;k <= i_seq_pos; k++) {
         //
         //	    if ( ((bl == r.startB()-1) &&
-        //mapperA.is_valid_pos_external(k))
-        //		    || ( (bl != r.startB()-1) && mapperA.is_valid_pos(k))
-        //)
+        //          mapperA.is_valid_pos_external(k))
+        //                  || ( (bl != r.startB()-1) &&
+        //                  mapperA.is_valid_pos(k)) )
         //		alignment.append(k,-1);
         //
         //	}

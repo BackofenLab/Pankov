@@ -17,9 +17,9 @@ my $outfile;
 
 ## Getopt::Long::Configure("no_ignore_case");
 
-GetOptions(	   
+GetOptions(
 	   "verbose" => \$verbose,
-	   "quiet" => \$quiet,   
+	   "quiet" => \$quiet,
 	   "help"=> \$help,
 	   "man" => \$man
 	   ) || pod2usage(2);
@@ -49,14 +49,14 @@ sub read_clustal {
     my ($file)=@_;
 
     my %aln;
-    
+
     local *IN;
-    
-    open(IN,$file) || die "Cannot read $!";
-    
-    <IN> =~ /^CLUSTAL/ || die "Not a clustal file: $file";
-    
-    while(my $line=<IN>) {
+
+    open(my $IN, "<", $file) || die "Cannot read from $file: $!";
+
+    <$IN> =~ /^CLUSTAL/ || die "Not a clustal file: $file";
+
+    while(my $line=<$IN>) {
 	if ($line =~ /(\S+)\s+(\S+)/) {
 	    my $name=$1;
 	    my $seq=$2;
@@ -77,15 +77,15 @@ sub read_clustal {
 
 my %aln = read_clustal($clustalfile);
 
-open(OUT,">$outfile");
+open(my $OUT, ">", "$outfile") || die "Cannot write to $outfile: $!";
 
 for my $name (keys %aln) {
     my $seq=$aln{$name};
     $seq =~ s/[~-]//g;
-    print OUT ">$name\n$seq\n";
+    print $OUT ">$name\n$seq\n";
 }
 
-close OUT;
+close $OUT;
 
 system("mlocarna $LOCARNA_OPTS $outfile");
 

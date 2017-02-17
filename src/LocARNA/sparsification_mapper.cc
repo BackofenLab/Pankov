@@ -13,7 +13,6 @@ namespace LocARNA {
             // pos_type max_size = 0;
             struct_pos.reset();
             const Arc &arc = bps.arc(k);
-            // std::cout << "compute_mapping_idx_arc: arc " << arc << std::endl;
             // add initialization
             struct_pos.unpaired = true;
             struct_pos.seq_pos = arc.left();
@@ -135,7 +134,7 @@ namespace LocARNA {
         info_for_pos struct_pos;
         size_type seq_length = rnadata.length();
         //	std::cout << "compute_mapping_idx_left_ends: seq_length=" <<
-        //seq_length << std::endl;
+        //      seq_length << std::endl;
         info_valid_seq_pos_vecs.resize(seq_length + 1);
         valid_mat_pos_vecs_before_eq.resize(seq_length + 1);
         // go over all left ends
@@ -192,7 +191,7 @@ namespace LocARNA {
         }
         //	cout << "max_info_vec_size " << max_info_vec_size << endl;
         //	cout << "valid positions for indices " <<
-        //info_valid_seq_pos_vecs << endl;
+        //      info_valid_seq_pos_vecs << endl;
     }
 
     void

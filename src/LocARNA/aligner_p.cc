@@ -1297,7 +1297,7 @@ namespace LocARNA {
                     }
                 }
                 //	else{std::cout<<"left adj list empty " <<al<<"
-                //"<<bl<<endl;}
+                //      "<<bl<<endl;}
             }
         }
 

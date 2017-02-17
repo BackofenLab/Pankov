@@ -1,4 +1,4 @@
-#ifndef LOCARNA_SCORING_HH
+ #ifndef LOCARNA_SCORING_HH
 #define LOCARNA_SCORING_HH
 
 #ifdef HAVE_CONFIG_H
@@ -311,23 +311,23 @@ namespace LocARNA {
 
     public:
         /**
-             * @brief construct scoring object
-             *
-             * @param seqA first sequence
-             * @param seqB second sequence
-             * @param rna_dataA probability data of first sequence
-             * @param rna_dataB probability data of second sequence
-             * @param arc_matches the (significant) arc matches between the
+         * @brief construct scoring object
+         *
+         * @param seqA first sequence
+         * @param seqB second sequence
+         * @param rna_dataA probability data of first sequence
+         * @param rna_dataB probability data of second sequence
+         * @param arc_matches the (significant) arc matches between the
          * sequences
-             * @param match_probs pointer to base match probabilities (can be 0L
-         * for non-mea scores)
-             * @param params a collection of parameters for scoring
-             * @param exp_scores only if true, the results of the exp_*
-             * scoring functions are defined, otherwise precomputations can be
+         * @param match_probs pointer to base match probabilities (can be 0L for
+         * non-mea scores)
+         * @param params a collection of parameters for scoring
+         * @param exp_scores only if true, the results of the exp_*
+         * scoring functions are defined, otherwise precomputations can be
          * omitted.
-             * @param conditional_scores only if true the conditional
+         * @param conditional_scores only if true the conditional
          * probability scoring is used
-            */
+         */
         Scoring(const Sequence &seqA,
                 const Sequence &seqB,
                 const RnaData &rna_dataA,
@@ -339,23 +339,23 @@ namespace LocARNA {
                 bool conditional_scores = false);
 
         /**
-             * @brief construct scoring object
-             *
-             * @param seqA first sequence
-             * @param seqB second sequence
-             * @param rna_dataA Extended probability data of first sequence
-             * @param rna_dataB Extended  probability data of second sequence
-             * @param arc_matches the (significant) arc matches between the
+         * @brief construct scoring object
+         *
+         * @param seqA first sequence
+         * @param seqB second sequence
+         * @param rna_dataA Extended probability data of first sequence
+         * @param rna_dataB Extended  probability data of second sequence
+         * @param arc_matches the (significant) arc matches between the
          * sequences
-             * @param match_probs pointer to base match probabilities (can be 0L
+         * @param match_probs pointer to base match probabilities (can be 0L
          * for non-mea scores)
-             * @param params a collection of parameters for scoring
-             * @param exp_scores only if true, the results of the exp_*
-             * scoring functions are defined, otherwise precomputations can be
+         * @param params a collection of parameters for scoring
+         * @param exp_scores only if true, the results of the exp_*
+         * scoring functions are defined, otherwise precomputations can be
          * omitted.
-             * @param conditional_scores only if true the conditional
+         * @param conditional_scores only if true the conditional
          * probability scoring is used
-            */
+         */
         Scoring(const Sequence &seqA,
                 const Sequence &seqB,
                 const ExtRnaData &rna_dataA,
@@ -502,7 +502,7 @@ namespace LocARNA {
         precompute_weights();
 
         /**
-         *  \brief Helper for precompute_weights (does job for one rna)
+         * \brief Helper for precompute_weights (does job for one rna)
          *
          * @param rna_data rna probability data
          * @param bps base pairs

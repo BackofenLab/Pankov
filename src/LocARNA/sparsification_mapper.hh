@@ -402,9 +402,9 @@ namespace LocARNA {
          * @param arc Arc
          * @return true, if the probability that the inner_arc occurs in the
          * loop closed by the arc is
-         * 				 is greater or equal to the threshold for a
-         * basepair under a loop \n
-         * 		   false, otherwise
+         *                               is greater or equal to the threshold
+         * for a basepair under a loop \n
+         *                 false, otherwise
          */
         bool
         is_valid_arc(const Arc &inner_arc,
@@ -451,9 +451,9 @@ namespace LocARNA {
          * @param pos sequence position
          * @return true, if the probability that the inner_arc occurs in the
          * loop closed by the arc is
-         * 				 greater or equal to the threshold for a basepair
-         * under a loop \n
-         * 		   false, otherwise
+         *                               greater or equal to the threshold for a
+         * basepair under a loop \n
+         *                 false, otherwise
          */
         bool
         is_valid_pos(const Arc &arc,

@@ -39,7 +39,8 @@ namespace LocARNA {
         // 	    << match_controller.is_valid_match(arcA.left(),arcB.left())
         // << " "
         // 	    <<
-        // match_controller.is_valid_match(arcA.right(),arcB.right()) << " "
+        //          match_controller.is_valid_match(arcA.right(),arcB.right())
+        //          << " "
         // 	    << valid << " "
         // 	    << std::endl;
 

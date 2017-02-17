@@ -2768,7 +2768,8 @@ namespace LocARNA {
         for (unsigned int j_1 = 1; j_1 < size_t(j - i + 2); ++j_1)
             for (unsigned int l_2 = 1; l_2 < size_t(l - k + 2); ++l_2) {
                 if (debug == true) {
-                    //	std::cout << "debug " << j_1 << "," << l_2 << std::endl;
+                    //      std::cout << "debug " << j_1 << "," << l_2 <<
+                    //      std::endl;
                 }
                 // check if EPMs ending at current position
                 if (EPM_Table2[i + j_1 - 1][k + l_2 - 1].size() == 0) {

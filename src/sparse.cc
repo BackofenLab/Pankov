@@ -581,16 +581,6 @@ main(int argc, char **argv) {
     if (clp.verbose)
         MainHelper::report_input(seqA, seqB, *arc_matches);
 
-    std::cout << "Sequence B: " << std::endl;
-    seqB.write(cout);
-    std::cout << " (Length:" << seqB.length()
-              << ", Basepairs:" << bpsB.num_bps() << ")" << std::endl;
-
-    cout << std::endl
-         << "Base Pair Matches: " << arc_matches->num_arc_matches() << "."
-         << std::endl;
-    // cout << "Base Identity: "<<(seq_identity(seqA,seqB)*100)<<endl;
-
     // construct sparsification mapper for seqs A,B
     SparsificationMapper mapperA(bpsA, *rna_dataA,
                                  clp.prob_unpaired_in_loop_threshold,
@@ -733,10 +723,6 @@ main(int argc, char **argv) {
     // Traceback
     //
     if (DO_TRACE) {
-        if (clp.verbose) {
-            std::cout << "Traceback." << std::endl;
-        }
-
         aligner.trace();
     }
 

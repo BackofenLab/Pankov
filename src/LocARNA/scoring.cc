@@ -124,34 +124,6 @@ namespace LocARNA {
         }
 #endif
 
-        if (params->ribofit) {
-            precompute_sequence_identities();
-        }
-
-        precompute_sigma();
-        precompute_gapcost();
-        precompute_weights();
-
-        apply_unpaired_penalty();
-        if (exp_scores) {
-            exp_indel_opening_score = boltzmann_weight(params->indel_opening);
-            exp_indel_opening_loop_score =
-                boltzmann_weight(params->indel_opening_loop);
-            precompute_exp_sigma();
-            precompute_exp_gapcost();
-        }
-        // -----------------------------------------
-        // Set default context for the parent arcs needed if conditonal_scores
-        // is set to True
-        // TODO: How about considering the alignment constraints?
-        //		parent_arcA = Arc();
-        //		parent_arcB = Arc();
-        context_al = 0;
-        context_ar = seqA_.length() + 1;
-        context_bl = 0;
-        context_br = seqB_.length() + 1;
-    }
-
     void
     Scoring::subtract(std::vector<score_t> &v, score_t x) const {
         std::transform(v.begin(), v.end(), v.begin(),
@@ -334,8 +306,6 @@ namespace LocARNA {
             const Arc &a = bps.arc(i);
 
             double p = rna_data.arc_prob(a.left(), a.right());
-            //	    std::cout << "   " << a.left() << "," << a.right() << "=" <<
-            //p << std::endl;
             weights[i] = probToWeight(p, exp_prob);
 
             if (params->stacking) {

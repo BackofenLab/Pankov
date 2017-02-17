@@ -168,16 +168,17 @@ namespace LocARNA {
                     // if (p_cond!=0) {
                     // 		    std::cout << i << " " << j << " "
                     // 			      << p << " "
-                    // 			      << rna_data.get_arc_prob(i+1,j-1) << "
-                    // "
-                    // 			      << p_cond << " "
-                    // 			      << pe << " "
-                    // 			      << round(200 * (1-log(p)/log(pe)))	<< "
-                    // "
-                    // 			      << round(200 *
-                    // (1-log(rna_data.get_arc_prob(i+1,j-1))/log(pe)))	<< " "
-                    // 			      << round(200 * (1-log(p_cond)/log(pe)))	<< "
-                    // "
+                    //                        << rna_data.get_arc_prob(i+1,j-1)
+                    //                        << " "
+                    //                        << p_cond << " "
+                    //                        << pe << " "
+                    //                        << round(200 * (1-log(p)/log(pe)))
+                    //                        << " "
+                    //                        << round(200 *
+                    //                        (1-log(rna_data.get_arc_prob(i+1,j-1))/log(pe)))
+                    //                        << " "
+                    //                        << round(200 *
+                    //                        (1-log(p_cond)/log(pe)))   << " "
                     // 			      << std::endl;
                     // 		}
 

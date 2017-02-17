@@ -613,9 +613,8 @@ namespace LocARNA {
          * @param indexB index that is used for sequence B
          * @param idx_i row index in the sparsified matrix
          * @param left_endB set to left end of the arc in sequence B if indexing
-         * by the arcs is used
-         * 					default setting is the index for sequence B
-         * if indexing by the left ends is used
+         * by the arcs is used; default setting is the index for
+         * sequence B if indexing by the left ends is used
          */
         matidx_t
         min_col_idx(
@@ -635,9 +634,8 @@ namespace LocARNA {
          * @param indexB index that is used for sequence B
          * @param idx_i row index in the sparsified matrix
          * @param left_endB set to left end of the arc in sequence B if indexing
-         * by the arcs is used
-         * 					default setting is the index for sequence B
-         * if indexing by the left ends is used
+         * by the arcs is used; default setting is the index for
+         * sequence B if indexing by the left ends is used
          */
         matidx_t
         idx_after_max_col_idx(
@@ -658,13 +656,11 @@ namespace LocARNA {
          * @param cur_pos_seq the pair of positions in sequence A and B,
          * respectively
          * @param left_endA set to left end of the arc in sequence A if indexing
-         * by the arcs is used
-         * 					default setting is the index for sequence A
-         * if indexing by the left ends is used
+         * by the arcs is used; default setting is the index for
+         * sequence A if indexing by the left ends is used
          * @param left_endB set to left end of the arc in sequence B if indexing
-         * by the arcs is used
-         * 					default setting is the index for sequence B
-         * if indexing by the left ends is used
+         * by the arcs is used; default setting is the index for
+         * sequence B if indexing by the left ends is used
          * @return the first valid matrix position before the sequence position
          * cur_pos_seq
          */
@@ -1640,8 +1636,8 @@ namespace LocARNA {
          * @param inner_b inner arc in sequence B
          *
          * @return the stacking score for the inner arcmatch of
-         * 		   arcs inner_a and inner_b and the arcmatch of arcs a and
-         * b
+         *                 arcs inner_a and inner_b and the arcmatch of arcs a
+         * and b
          */
         score_t
         score_for_stacking(const Arc &a,
