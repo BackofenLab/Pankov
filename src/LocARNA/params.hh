@@ -179,7 +179,7 @@ namespace LocARNA {
          * @param scoring scoring object
          */
         AlignerParams &
-        scoring(const Scoring &scoring) {
+        scoring(Scoring &scoring) { //const?
             scoring_ = &scoring;
             return *this;
         }

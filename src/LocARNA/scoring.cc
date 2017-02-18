@@ -123,6 +123,7 @@ namespace LocARNA {
             }
         }
 #endif
+    }
 
     void
     Scoring::subtract(std::vector<score_t> &v, score_t x) const {
