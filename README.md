@@ -1,4 +1,4 @@
- Pankov: Probabilistic Sankoff-like RNA alignment and folding using Markovproperty with a near-exact energy model
+Pankov: Probabilistic Sankoff-like RNA alignment and folding using Markovproperty with a near-exact energy model
 
 This is the Pankov repository for structural alignment of RNAs, which is an extended branch of LocARNA package.
 
