@@ -1,3 +1,5 @@
+*.o
+*.lo
 Doc/auto
 
 m4/libtool.m4

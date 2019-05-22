@@ -129,7 +129,7 @@ public:
 		}
 		else{
 //			compute_mapping_idx_arcs();
-			std::cout << "Caution compute_mapping_idx_arcs_external is called, Exparna-p compatibility needs to be verified" << std::endl;
+			std::cout << "Caution: Pankov alignment branch. Incompatibilities for running other aligner tools, please use the original/master LocARNA package." << std::endl;
 			compute_mapping_idx_arcs_external();
 		}
 	}

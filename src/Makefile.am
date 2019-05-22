@@ -75,7 +75,7 @@ nobase_library_include_HEADERS = LocARNA/aux.hh LocARNA/plusvector.hh	\
 ##
 bin_PROGRAMS = locarna.bin locarna_p locarnap_fit	\
                locarna_deviation locarna_rnafold_pp ribosum2cc	\
-               exparna_p sparse sparse_n
+               exparna_p sparse pankov
 
 if STATIC_LIBLOCARNA
 ## link libLocARNA statically to the binaries
@@ -87,7 +87,7 @@ locarna_p_LDFLAGS=-static
 locarna_rnafold_pp_LDFLAGS=-static
 ribosum2cc_LDFLAGS=-static
 sparse_LDFLAGS=-static
-sparse_n_LDFLAGS=-static
+pankov_LDFLAGS=-static
 endif
 
 #remove the extension .bin for installation
